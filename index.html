@@ -1501,32 +1501,40 @@ function renderShop(){
 async function addShopItem(){
   const input = document.getElementById('shopInput');
   const name = input.value.trim();
-  if(!name) return;
-  const emoji = document.getElementById('shopCatSel').value;
-  const catLabel = document.getElementById('shopCatSel').options[document.getElementById('shopCatSel').selectedIndex].text.split(' ').slice(1).join(' ');
+  if(!name){ showToast('⚠️ Écris un article !'); return; }
+  const sel = document.getElementById('shopCatSel');
+  const emoji = sel.value;
+  const catLabel = sel.options[sel.selectedIndex].text.split(' ').slice(1).join(' ');
   const memberId = S.members[0]?.id || null;
-  const {error} = await sb.from('shopping').insert({
-    name, emoji, category: catLabel,
-    done: false, member_id: memberId,
-    created_at: Date.now().toString()
-  });
-  if(error){ showToast('⚠️ Erreur ajout'); console.error(error); return; }
+  const payload = { name, emoji, category: catLabel, done: false, member_id: memberId };
+  console.log('Adding shop item:', payload);
+  const {data, error} = await sb.from('shopping').insert(payload).select();
+  if(error){ 
+    showToast('⚠️ Erreur: ' + error.message); 
+    console.error('Shop insert error:', error); 
+    return; 
+  }
+  console.log('Added:', data);
   input.value = '';
   showToast('🛒 Article ajouté !');
+  await dbLoad();
+  renderShop();
 }
 
 async function toggleShopItem(id){
   const item = S.shopItems.find(i=>i.id===id);
   if(!item) return;
   const {error} = await sb.from('shopping').update({done:!item.done}).eq('id',id);
-  if(error){ console.error(error); return; }
+  if(error){ console.error(error); showToast('⚠️ Erreur'); return; }
   if(!item.done) showToast('✅ Article acheté !');
+  await dbLoad(); renderShop();
 }
 
 async function deleteShopItem(id){
   const {error} = await sb.from('shopping').delete().eq('id',id);
-  if(error){ console.error(error); return; }
+  if(error){ console.error(error); showToast('⚠️ Erreur'); return; }
   showToast('🗑️ Article supprimé');
+  await dbLoad(); renderShop();
 }
 
 async function clearDoneItems(){
