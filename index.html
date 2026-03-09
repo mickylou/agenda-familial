@@ -444,6 +444,38 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
 .notif-close { font-size: 14px; color: rgba(45,43,85,.3); flex-shrink: 0; padding: 2px; }
 .notif-close:hover { color: var(--dark); }
 
+
+/* ══ LISTE DE COURSES ══ */
+.shop-panel{background:var(--white);border-radius:var(--r-xl);box-shadow:var(--sh);border:2px solid rgba(45,43,85,.05);overflow:hidden;margin-bottom:20px;}
+.shop-header{padding:18px 22px;border-bottom:2px solid rgba(45,43,85,.05);display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#82E0A820,transparent);}
+.shop-title{font-family:'Baloo 2',sans-serif;font-size:18px;font-weight:700;color:var(--dark);}
+.shop-add-row{display:flex;gap:10px;padding:14px 16px;border-bottom:1px solid rgba(45,43,85,.05);}
+.shop-input{flex:1;border:2px solid rgba(45,43,85,.1);border-radius:var(--r-md);padding:10px 14px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:600;color:var(--dark);background:#F8F7FF;outline:none;transition:border .2s;}
+.shop-input:focus{border-color:var(--mint);}
+.shop-add-btn{background:linear-gradient(135deg,var(--mint),#26b5ab);color:white;border:none;border-radius:var(--r-md);padding:10px 18px;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;transition:all .2s;white-space:nowrap;}
+.shop-add-btn:hover{transform:scale(1.04);box-shadow:0 4px 14px rgba(78,205,196,.35);}
+.shop-cats{display:flex;gap:6px;padding:10px 16px;flex-wrap:wrap;border-bottom:1px solid rgba(45,43,85,.05);}
+.shop-cat-btn{padding:5px 12px;border-radius:var(--r-f);border:2px solid rgba(45,43,85,.1);background:white;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;cursor:pointer;transition:all .2s;color:var(--dark);}
+.shop-cat-btn.active{border-color:var(--mint);background:linear-gradient(135deg,#4ECDC420,#26b5ab10);color:#26b5ab;}
+.shop-items{padding:10px 14px;display:flex;flex-direction:column;gap:6px;max-height:420px;overflow-y:auto;}
+.shop-item{display:flex;align-items:center;gap:12px;padding:11px 14px;border-radius:var(--r-md);border:2px solid rgba(45,43,85,.06);background:white;transition:all .25s;cursor:pointer;}
+.shop-item:hover{border-color:rgba(78,205,196,.3);background:#F0FFFE;}
+.shop-item.done{opacity:.5;background:#F8F8F8;}
+.shop-item.done .shop-item-name{text-decoration:line-through;color:rgba(45,43,85,.4);}
+.shop-check{width:26px;height:26px;border-radius:8px;border:2.5px solid rgba(45,43,85,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;font-size:14px;}
+.shop-item.done .shop-check{background:var(--mint);border-color:var(--mint);color:white;}
+.shop-item-emoji{font-size:20px;flex-shrink:0;}
+.shop-item-info{flex:1;min-width:0;}
+.shop-item-name{font-size:14px;font-weight:700;color:var(--dark);}
+.shop-item-meta{font-size:11px;color:rgba(45,43,85,.4);font-weight:600;margin-top:1px;}
+.shop-item-av{width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:800;color:white;flex-shrink:0;}
+.shop-del{width:26px;height:26px;border-radius:8px;border:none;background:rgba(255,107,107,.1);color:var(--coral);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;opacity:0;transition:all .2s;}
+.shop-item:hover .shop-del{opacity:1;}
+.shop-empty{text-align:center;padding:30px;color:rgba(45,43,85,.3);font-family:'Baloo 2',sans-serif;font-size:16px;}
+.shop-progress{height:5px;background:rgba(45,43,85,.06);border-radius:3px;margin:0 16px 12px;}
+.shop-progress-bar{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--mint),var(--lime));transition:width .4s ease;}
+.shop-stats{font-size:12px;color:rgba(45,43,85,.4);font-weight:700;padding:0 16px 10px;}
+
 </style>
 </head>
 <body>
@@ -486,6 +518,7 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
         <div class="nav-item" onclick="setNav(this)"><span class="nav-icon">🎯</span> Projets</div>
         <div class="nav-item" onclick="setNav(this)"><span class="nav-icon">⚠️</span> Alertes<span class="badge pulse" id="alertBadge">0</span></div>
         <div class="nav-item" onclick="setNav(this)"><span class="nav-icon">💬</span> Discussion</div>
+        <div class="nav-item" onclick="setNav(this)"><span class="nav-icon">🛒</span> Courses<span class="badge" id="shopBadge" style="display:none;">0</span></div>
         <div class="nav-item" onclick="setNav(this)"><span class="nav-icon">⚙️</span> Paramètres</div>
       </div>
     </div>
@@ -606,6 +639,33 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
           <button class="chat-send" onclick="sendChat()">➤</button>
         </div>
       </div>
+    </div>
+
+    <!-- LISTE DE COURSES -->
+    <div class="shop-panel" id="shopPanel">
+      <div class="shop-header">
+        <div class="shop-title">🛒 Liste de courses</div>
+        <span id="shopDoneCount" style="font-size:12px;color:rgba(45,43,85,.4);font-weight:700;"></span>
+      </div>
+      <div class="shop-add-row">
+        <input class="shop-input" id="shopInput" placeholder="Ajouter un article… (ex: lait, pain…)" onkeydown="if(event.key==='Enter')addShopItem()">
+        <select class="shop-input" id="shopCatSel" style="max-width:150px;">
+          <option value="🥦">🥦 Légumes</option>
+          <option value="🍎">🍎 Fruits</option>
+          <option value="🥩">🥩 Viande/Poisson</option>
+          <option value="🥛">🥛 Produits laitiers</option>
+          <option value="🍞">🍞 Boulangerie</option>
+          <option value="🧴">🧴 Hygiène</option>
+          <option value="🧹">🧹 Ménage</option>
+          <option value="🥫">🥫 Épicerie</option>
+          <option value="❄️">❄️ Surgelés</option>
+          <option value="🍬">🍬 Snacks</option>
+        </select>
+        <button class="shop-add-btn" onclick="addShopItem()">＋ Ajouter</button>
+      </div>
+      <div class="shop-progress"><div class="shop-progress-bar" id="shopProgressBar" style="width:0%"></div></div>
+      <div class="shop-stats" id="shopStats"></div>
+      <div class="shop-items" id="shopItems"></div>
     </div>
 
     <div class="project-panel">
@@ -769,6 +829,7 @@ async function dbLoad(){
       sb.from('events').select('*').order('id'),
       sb.from('projects').select('*').order('id'),
       sb.from('chats').select('*').order('ts'),
+      sb.from('shopping').select('*').order('created_at'),
     ]);
     S.members  = (mem.data||[]).map(r=>({id:r.id,name:r.name,role:r.role,color:r.color,photo:r.photo}));
     S.events   = (evt.data||[]).map(r=>({id:r.id,title:r.title,date:r.date,dateEnd:r.date_end,time:r.time,timeEnd:r.time_end,cat:r.cat,memberIds:r.member_ids||[],location:r.location,note:r.note,recurrence:r.recurrence,recurGroupId:r.recur_group_id}));
@@ -847,7 +908,7 @@ function renderWidget(){
 }
 
 function renderAll(){
-  renderSidebar();renderCalendar();renderEvents();renderChat();renderProjects();
+  renderSidebar();renderCalendar();renderEvents();renderChat();renderProjects();renderShop();
   renderCatGrid();renderMembersPicker('membersPicker');renderQuickbar();renderWidget();
   document.getElementById('statTotal').textContent=S.events.length;
   document.getElementById('agendaBadge').textContent=S.events.filter(e=>e.date>=new Date().toISOString().slice(0,10)).length;
@@ -1382,6 +1443,97 @@ async function saveProject(){
   });
   if(error){showToast('⚠️ Erreur création projet');console.error(error);return;}
   S.memberIds=[];closeModal('projectModal');showToast('🚀 Projet créé !');
+}
+
+// ── LISTE DE COURSES ──────────────────────────────
+function renderShop(){
+  const items = S.shopItems || [];
+  const total = items.length;
+  const done  = items.filter(i=>i.done).length;
+  const pct   = total ? Math.round(done/total*100) : 0;
+
+  document.getElementById('shopProgressBar').style.width = pct + '%';
+  document.getElementById('shopStats').textContent = total
+    ? `${done} / ${total} articles achetés · ${pct}% fait !`
+    : 'La liste est vide 🎉';
+  document.getElementById('shopDoneCount').textContent = total ? `${done}/${total}` : '';
+
+  // Badge
+  const remaining = total - done;
+  const badge = document.getElementById('shopBadge');
+  if(remaining > 0){ badge.textContent = remaining; badge.style.display = ''; }
+  else { badge.style.display = 'none'; }
+
+  if(!total){
+    document.getElementById('shopItems').innerHTML = '<div class="shop-empty">🛒 La liste est vide !<br><small>Ajoutez vos articles ci-dessus</small></div>';
+    return;
+  }
+
+  // Group by category
+  const grouped = {};
+  items.forEach(item => {
+    const cat = item.emoji || '🛒';
+    if(!grouped[cat]) grouped[cat] = [];
+    grouped[cat].push(item);
+  });
+
+  let html = '';
+  Object.entries(grouped).forEach(([cat, catItems]) => {
+    html += `<div style="font-size:11px;font-weight:800;color:rgba(45,43,85,.35);letter-spacing:1px;text-transform:uppercase;padding:8px 4px 4px;">${cat} ${catItems[0]?.category||''}</div>`;
+    catItems.forEach(item => {
+      const member = S.members.find(m=>m.id===item.member_id);
+      const time = item.created_at ? new Date(parseInt(item.created_at)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}) : '';
+      html += `<div class="shop-item${item.done?' done':''}" onclick="toggleShopItem(${item.id})">
+        <div class="shop-check">${item.done?'✓':''}</div>
+        <div class="shop-item-emoji">${item.emoji||'🛒'}</div>
+        <div class="shop-item-info">
+          <div class="shop-item-name">${item.name}</div>
+          <div class="shop-item-meta">${member?'Ajouté par '+member.name:''}${item.done?' · ✅ Acheté':''}</div>
+        </div>
+        ${member?`<div class="shop-item-av" style="background:${member.color}">${member.name[0]}</div>`:''}
+        <button class="shop-del" onclick="event.stopPropagation();deleteShopItem(${item.id})">🗑️</button>
+      </div>`;
+    });
+  });
+  document.getElementById('shopItems').innerHTML = html;
+}
+
+async function addShopItem(){
+  const input = document.getElementById('shopInput');
+  const name = input.value.trim();
+  if(!name) return;
+  const emoji = document.getElementById('shopCatSel').value;
+  const catLabel = document.getElementById('shopCatSel').options[document.getElementById('shopCatSel').selectedIndex].text.split(' ').slice(1).join(' ');
+  const memberId = S.members[0]?.id || null;
+  const {error} = await sb.from('shopping').insert({
+    name, emoji, category: catLabel,
+    done: false, member_id: memberId,
+    created_at: Date.now().toString()
+  });
+  if(error){ showToast('⚠️ Erreur ajout'); console.error(error); return; }
+  input.value = '';
+  showToast('🛒 Article ajouté !');
+}
+
+async function toggleShopItem(id){
+  const item = S.shopItems.find(i=>i.id===id);
+  if(!item) return;
+  const {error} = await sb.from('shopping').update({done:!item.done}).eq('id',id);
+  if(error){ console.error(error); return; }
+  if(!item.done) showToast('✅ Article acheté !');
+}
+
+async function deleteShopItem(id){
+  const {error} = await sb.from('shopping').delete().eq('id',id);
+  if(error){ console.error(error); return; }
+  showToast('🗑️ Article supprimé');
+}
+
+async function clearDoneItems(){
+  const doneIds = S.shopItems.filter(i=>i.done).map(i=>i.id);
+  if(!doneIds.length){ showToast('Rien à effacer !'); return; }
+  await sb.from('shopping').delete().in('id', doneIds);
+  showToast('🧹 Articles achetés supprimés !');
 }
 
 // ── EVENT EDIT ───────────────────────────────────
