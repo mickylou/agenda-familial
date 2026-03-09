@@ -4,6 +4,12 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>FamilySync 🏠 Agenda Familial</title>
+<meta name="theme-color" content="#2D2B55">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="FamilySync">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%232D2B55'/%3E%3Ctext y='72' x='50' text-anchor='middle' font-size='62'%3E🏠%3C/text%3E%3C/svg%3E">
 <link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -136,14 +142,15 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
 .cal-grid{padding:0 16px 16px;}
 .cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);margin-bottom:6px;}
 .cal-weekday{text-align:center;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:rgba(45,43,85,.3);padding:14px 0 8px;}
-.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;}
-.cal-day{aspect-ratio:1;border-radius:var(--r-md);display:flex;flex-direction:column;align-items:center;padding:6px 4px 4px;cursor:pointer;transition:all .15s;min-height:58px;border:2px solid transparent;}
-.cal-day:hover{background:rgba(167,139,250,.1);border-color:rgba(167,139,250,.3);transform:scale(1.06);}
+.cal-days{display:grid;grid-template-columns:repeat(7,1fr);gap:3px;}
+.cal-day{border-radius:var(--r-sm);display:flex;flex-direction:column;align-items:stretch;padding:5px 4px 4px;cursor:pointer;transition:all .15s;min-height:72px;border:2px solid transparent;overflow:hidden;}
+.cal-day:hover{background:rgba(167,139,250,.1);border-color:rgba(167,139,250,.3);}
 .cal-day.other-month{opacity:.2;}
-.cal-day.today{background:linear-gradient(135deg,var(--grape),var(--blue));border-color:transparent;}
-.cal-day.today .day-num{color:white;font-weight:900;}
-.day-num{font-size:14px;font-weight:800;color:var(--dark);width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:50%;}
-.day-dots{display:flex;gap:3px;margin-top:3px;flex-wrap:wrap;justify-content:center;}
+.cal-day.today{background:linear-gradient(135deg,#A78BFA22,#60A5FA11);border-color:var(--grape);}
+.cal-day.today .day-num{background:linear-gradient(135deg,var(--grape),var(--blue));color:white;font-weight:900;}
+.day-num{font-size:13px;font-weight:800;color:var(--dark);width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:50%;margin-bottom:3px;flex-shrink:0;}
+.day-dots{display:flex;flex-direction:column;gap:2px;width:100%;}
+.day-evt-pill{font-size:9px;font-weight:700;color:white;border-radius:4px;padding:1px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;}
 .day-dot{width:6px;height:6px;border-radius:50%;}
 
 /* PANELS */
@@ -408,6 +415,35 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
 
 .dw-mname { font-size: 8px; font-weight: 600; color: #a0622a; letter-spacing: .3px; }
 
+
+/* ══ NOTIFICATION POP-UP ══ */
+.notif-popup {
+  position: fixed;
+  top: 16px; right: 16px;
+  background: white;
+  border-radius: 18px;
+  box-shadow: 0 8px 32px rgba(45,43,85,.22), 0 2px 0 rgba(45,43,85,.08);
+  padding: 14px 16px;
+  display: flex; align-items: center; gap: 12px;
+  max-width: 320px; min-width: 240px;
+  z-index: 9999;
+  border: 2px solid rgba(167,139,250,.3);
+  transform: translateX(120%);
+  transition: transform .4s cubic-bezier(.34,1.56,.64,1);
+  cursor: pointer;
+}
+.notif-popup.show { transform: translateX(0); }
+.notif-icon {
+  width: 42px; height: 42px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px; flex-shrink: 0;
+}
+.notif-body { flex: 1; min-width: 0; }
+.notif-title { font-size: 13px; font-weight: 800; color: var(--dark); }
+.notif-desc  { font-size: 11px; color: rgba(45,43,85,.55); margin-top: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.notif-close { font-size: 14px; color: rgba(45,43,85,.3); flex-shrink: 0; padding: 2px; }
+.notif-close:hover { color: var(--dark); }
+
 </style>
 </head>
 <body>
@@ -416,6 +452,16 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
 <div class="star" style="left:82%;top:85%;font-size:16px;animation-duration:11s;animation-delay:1s;">🌟</div>
 <div class="star" style="left:70%;top:92%;font-size:10px;animation-duration:14s;animation-delay:4s;">⭐</div>
 <div class="star" style="left:50%;top:93%;font-size:14px;animation-duration:10s;animation-delay:6s;">✨</div>
+
+<!-- NOTIFICATION POPUP -->
+<div class="notif-popup" id="notifPopup" onclick="closeNotif()">
+  <div class="notif-icon" id="notifIcon" style="background:#EEF6FF;">🔔</div>
+  <div class="notif-body">
+    <div class="notif-title" id="notifTitle">Nouvelle notification</div>
+    <div class="notif-desc" id="notifDesc"></div>
+  </div>
+  <div class="notif-close">✕</div>
+</div>
 
 <div class="app">
   <!-- SIDEBAR -->
@@ -490,13 +536,7 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
       </div>
       <div id="familyMembersList" style="padding:14px;display:flex;flex-wrap:wrap;gap:12px;"></div>
     </div>
-      <div class="alert-icon">⚠️</div>
-      <div style="flex:1;">
-        <div class="alert-title">2 conflits détectés dans le planning !</div>
-        <div class="alert-desc">Samedi 15 mars : Foot de Lucas + Anniversaire Marie se chevauchent (10h–12h)</div>
-      </div>
-      <div class="alert-close" onclick="this.parentElement.style.display='none'">✕</div>
-    </div>
+
 
     <div class="stats-row">
       <div class="stat-card" data-emoji="📅"><div class="stat-label">Ce mois-ci</div><div class="stat-value" id="statTotal">0</div><div class="stat-sub">événements 🎉</div></div>
@@ -980,11 +1020,17 @@ function renderCalendar(){
     cells.push({day:d,om:false,date:dt,it});
   }
   while(cells.length%7!==0) cells.push({day:cells.length-(sd+dim)+1,om:true});
+  const CATS_COL={sport:'#4ECDC4',riding:'#C084FC',school:'#A78BFA',medical:'#F472B6',social:'#FF6B6B',family:'#82E0A8',leisure:'#FFB347'};
   document.getElementById('calDays').innerHTML=cells.map(c=>{
-    const evts=c.date?S.events.filter(e=>e.date===c.date||(e.dateEnd&&c.date>e.date&&c.date<=e.dateEnd)):[];
-    const dots=evts.slice(0,4).map(e=>{const m=S.members.find(x=>x.id===e.memberIds?.[0]);return`<div class="day-dot" style="background:${m?m.color:'#ccc'}"></div>`;}).join('');
-    return`<div class="cal-day ${c.om?'other-month':''} ${c.it?'today':''}" ${c.date?`onclick="dayClick('${c.date}')" title="${evts.map(e=>e.title).join(', ')}"`:''}>
-      <div class="day-num">${c.day}</div><div class="day-dots">${dots}</div></div>`;
+    const evts=c.date?S.events.filter(e=>e.date===c.date||(e.dateEnd&&c.date>=e.date&&c.date<=e.dateEnd)):[];
+    const pills=evts.slice(0,3).map(e=>{
+      const col=CATS_COL[e.cat]||'#A78BFA';
+      const cat=CATS.find(x=>x.key===e.cat);
+      const emoji=cat?cat.emoji:'📅';
+      return`<div class="day-evt-pill" style="background:${col}">${emoji} ${e.title}</div>`;
+    }).join('');
+    const more=evts.length>3?`<div style="font-size:9px;color:var(--grape);font-weight:800;padding-left:2px;">+${evts.length-3} autres</div>`:'';
+    return`<div class="cal-day ${c.om?'other-month':''} ${c.it?'today':''}" ${c.date?`onclick="dayClick('${c.date}')"`:''}><div class="day-num">${c.day}</div><div class="day-dots">${pills}${more}</div></div>`;
   }).join('');
 }
 function prevMonth(){S.month--;if(S.month<0){S.month=11;S.year--;}renderCalendar();}
