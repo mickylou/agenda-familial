@@ -10,7 +10,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="FamilySync">
 <link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Crect width='100' height='100' rx='22' fill='%232D2B55'/%3E%3Ctext y='72' x='50' text-anchor='middle' font-size='62'%3E🏠%3C/text%3E%3C/svg%3E">
-<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Baloo+2:wght@600;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Nunito:ital,wght@0,400;0,600;0,700;0,800;0,900;1,700&family=Baloo+2:wght@600;700;800&family=Caveat:wght@400;700&display=swap" rel="stylesheet">
 <style>
 :root {
   --sky:   #EEF6FF;
@@ -27,7 +27,41 @@
   --sh:    0 6px 24px rgba(45,43,85,.10);
   --sh-lg: 0 10px 40px rgba(45,43,85,.16);
   --r-xl:  28px; --r-lg: 22px; --r-md: 16px; --r-sm: 12px; --r-f: 999px;
+  --bg-primary: var(--sky);
+  --bg-card: var(--white);
+  --text-primary: var(--dark);
+  --text-secondary: rgba(45,43,85,.5);
+  --border-color: rgba(45,43,85,.06);
 }
+/* DARK MODE */
+body.dark-mode {
+  --bg-primary: #13111f;
+  --bg-card: #1e1b30;
+  --text-primary: #e8e6f5;
+  --text-secondary: rgba(232,230,245,.45);
+  --border-color: rgba(255,255,255,.07);
+  --sky: #13111f;
+  --white: #1e1b30;
+  --dark: #e8e6f5;
+  --sh: 0 6px 24px rgba(0,0,0,.35);
+}
+body.dark-mode .sidebar { background: #0d0b1a; }
+body.dark-mode .topbar { background: #1e1b30; border-bottom: 1px solid rgba(255,255,255,.06); }
+body.dark-mode .quickbar-bar { background: #1e1b30; border-bottom: 1px solid rgba(255,255,255,.06); }
+body.dark-mode .cal-day { background: #252238; color: #e8e6f5; }
+body.dark-mode .cal-day.today { background: linear-gradient(135deg,#A78BFA33,#60A5FA22); }
+body.dark-mode .chat-bubble { background: rgba(255,255,255,.1); color: #e8e6f5; }
+body.dark-mode .form-input { background: #252238; color: #e8e6f5; border-color: rgba(255,255,255,.1); }
+body.dark-mode .modal-box { background: #1e1b30; color: #e8e6f5; }
+body.dark-mode .shop-input { background: #252238; color: #e8e6f5; }
+/* SAISONS */
+body.season-spring { --sky: #f0fff4; }
+body.season-spring body::before { background: radial-gradient(circle,#86efac50 0%,transparent 70%); }
+body.season-summer { --sky: #fffbeb; }
+body.season-summer body::before { background: radial-gradient(circle,#fde04750 0%,transparent 70%); }
+body.season-autumn { --sky: #fff7ed; }
+body.season-autumn body::before { background: radial-gradient(circle,#fb923c50 0%,transparent 70%); }
+body.season-winter { --sky: #eff6ff; }
 *{margin:0;padding:0;box-sizing:border-box;}
 body{font-family:'Nunito',sans-serif;background:var(--sky);color:var(--dark);min-height:100vh;overflow-x:hidden;}
 body::before,body::after{content:'';position:fixed;border-radius:50%;z-index:0;pointer-events:none;}
@@ -47,7 +81,9 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
 .members-list{display:flex;flex-direction:column;gap:4px;}
 .member-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--r-lg);cursor:pointer;transition:all .2s;}
 .member-item:hover{background:rgba(255,255,255,.08);transform:translateX(3px);}
-.member-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:white;flex-shrink:0;border:3px solid rgba(255,255,255,.2);overflow:hidden;}
+.member-avatar{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;color:white;flex-shrink:0;border:3px solid rgba(255,255,255,.2);overflow:hidden;transition:transform .2s,box-shadow .2s;}
+.member-item:hover .member-avatar{transform:scale(1.15);box-shadow:0 4px 16px rgba(0,0,0,.3);}
+@keyframes pulse-avatar{0%,100%{box-shadow:0 0 0 0 rgba(255,255,255,.4);}50%{box-shadow:0 0 0 6px rgba(255,255,255,.0);}}
 .member-avatar img{width:100%;height:100%;object-fit:cover;}
 .mem-name{font-size:14px;font-weight:700;color:white;}
 .mem-role{font-size:11px;color:rgba(255,255,255,.4);font-weight:600;}
@@ -176,6 +212,15 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
 /* CHAT */
 .chat-messages{padding:14px;display:flex;flex-direction:column;gap:12px;height:330px;overflow-y:auto;}
 .chat-msg{display:flex;gap:8px;align-items:flex-start;}
+.chat-reactions{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px;}
+.chat-reaction-btn{background:rgba(45,43,85,.07);border:none;border-radius:20px;padding:3px 8px;font-size:13px;cursor:pointer;transition:all .15s;font-family:'Nunito',sans-serif;font-weight:700;}
+.chat-reaction-btn:hover{background:rgba(167,139,250,.2);transform:scale(1.1);}
+.chat-reaction-btn.active{background:linear-gradient(135deg,#A78BFA33,#60A5FA22);border:1px solid #A78BFA55;}
+.chat-reaction-picker{display:flex;gap:4px;margin-top:4px;opacity:0;transition:opacity .2s;pointer-events:none;}
+.chat-msg:hover .chat-reaction-picker{opacity:1;pointer-events:all;}
+.chat-reaction-pick-btn{background:white;border:none;border-radius:50%;width:28px;height:28px;font-size:14px;cursor:pointer;box-shadow:0 2px 8px rgba(0,0,0,.12);transition:transform .15s;}
+.chat-reaction-pick-btn:hover{transform:scale(1.25);}
+.chat-photo-msg{max-width:200px;border-radius:12px;object-fit:cover;cursor:pointer;}
 .chat-msg.own{flex-direction:row-reverse;}
 .chat-av{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:900;color:white;overflow:hidden;border:2px solid rgba(255,255,255,.8);}
 .chat-av img{width:100%;height:100%;object-fit:cover;}
@@ -615,6 +660,7 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
           <div class="dw-week-strip" id="dwWeekStrip"></div>
         </div>
         <div class="dw-body">
+          <div id="weatherWidget" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin-bottom:8px;background:rgba(255,255,255,.15);border-radius:14px;font-family:'Caveat',cursive;font-size:15px;color:rgba(255,255,255,.9);"></div>
           <div class="dw-section-title">📅 Activités du jour</div>
           <div class="dw-events" id="dwEvents"></div>
           <div class="dw-members-row" id="dwMembers"></div>
@@ -656,11 +702,26 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
         <div class="chat-messages" id="chatMessages"></div>
         <div class="chat-input-row">
           <div id="chatWhoRow" style="display:flex;gap:6px;padding:6px 12px 0;flex-wrap:wrap;"></div>
-          <div style="display:flex;gap:8px;padding:8px 12px;">
+          <div style="display:flex;gap:8px;padding:8px 12px;align-items:center;">
+            <label style="cursor:pointer;font-size:20px;opacity:.6;transition:opacity .2s;" title="Envoyer une photo" onmouseover="this.style.opacity=1" onmouseout="this.style.opacity=.6">
+              📷<input type="file" accept="image/*" style="display:none" onchange="sendChatPhoto(this)">
+            </label>
             <input class="chat-input" id="chatInput" placeholder="Écrire un message… 😊" onkeydown="if(event.key==='Enter')sendChat()" style="flex:1;">
             <button class="chat-send" onclick="sendChat()">➤</button>
           </div>
         </div>
+      </div>
+    </div>
+
+    <!-- BUDGET FAMILIAL -->
+    <div class="shop-panel" id="budgetPanel" style="background:linear-gradient(135deg,#fff7ed,#fffbf5);">
+      <div class="shop-header">
+        <div class="shop-title" style="color:#f97316;">💶 Budget familial</div>
+        <button class="btn btn-ghost" style="font-size:12px;" onclick="openAddBudget()">＋ Dépense</button>
+      </div>
+      <div style="padding:0 20px 12px;">
+        <div id="budgetStats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;"></div>
+        <div id="budgetList" style="display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;"></div>
       </div>
     </div>
 
@@ -1020,7 +1081,7 @@ function shiftWeek(dir){
 }
 
 function renderAll(){
-  renderSidebar();renderCalendar();renderEvents();renderChat();renderProjects();renderShop();
+  renderSidebar();renderCalendar();renderEvents();renderChat();renderProjects();renderShop();renderBudget();
   renderCatGrid();renderMembersPicker('membersPicker');renderQuickbar();renderWidget();
   document.getElementById('statTotal').textContent=S.events.length;
   document.getElementById('agendaBadge').textContent=S.events.filter(e=>e.date>=new Date().toISOString().slice(0,10)).length;
@@ -1061,11 +1122,17 @@ function setMe(id){ _myMemberId=id; localStorage.setItem('familysync_me',id); re
 function getMe(){ return S.members.find(m=>m.id===_myMemberId)||S.members[0]||null; }
 
 async function init(){
+  applySeason();
+  applyDarkAuto();
   renderCatGrid();renderMembersPicker('membersPicker');renderProjTypes();renderColorPicker();
-  renderQuickbar(); // Show categories immediately before DB loads
+  renderQuickbar();
   showToast('🔄 Connexion à la base de données…');
   await dbLoad();
   setupRealtime();
+  fetchWeather();
+  renderBudget();
+  // Auto dark mode check every hour
+  setInterval(applyDarkAuto, 3600000);
 }
 
 // ── QUICKBAR ──────────────────────────────────────
@@ -1204,7 +1271,10 @@ function renderCalendar(){
       const col=CATS_COL[e.cat]||'#A78BFA';
       const cat=CATS.find(x=>x.key===e.cat);
       const emoji=cat?cat.emoji:'📅';
-      return`<div class="day-evt-pill" style="background:${col}">${emoji} ${e.title}</div>`;
+      // Show member color dots on pill
+      const mems=(e.memberIds||[]).map(id=>S.members.find(m=>m.id===id)).filter(Boolean);
+      const memDots=mems.slice(0,3).map(m=>'<span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:'+m.color+';margin-left:2px;vertical-align:middle;border:1px solid rgba(255,255,255,.5);"></span>').join('');
+      return'<div class="day-evt-pill" style="background:'+col+'">'+emoji+' '+e.title+memDots+'</div>';
     }).join('');
     const more=evts.length>3?`<div style="font-size:9px;color:var(--grape);font-weight:800;padding-left:2px;">+${evts.length-3} autres</div>`:'';
     return`<div class="cal-day ${c.om?'other-month':''} ${c.it?'today':''}" ${c.date?`onclick="dayClick('${c.date}')"`:''}><div class="day-num">${c.day}</div><div class="day-dots">${pills}${more}</div></div>`;
@@ -1281,15 +1351,39 @@ function setChatMember(id){ _chatMemberId = id; renderChatWho(); }
 function renderChat(){
   if(!_chatMemberId && S.members.length) _chatMemberId = S.members[0].id;
   renderChatWho();
-  document.getElementById('chatMessages').innerHTML=S.chats.map(msg=>{
-    const m=S.members.find(x=>x.id===msg.memberId); if(!m) return'';
-    const me=getMe(); const own=me&&msg.memberId===me.id;
+  const meForChat=getMe();
+  document.getElementById('chatMessages').innerHTML=S.chats.map(function(msg){
+    const m=S.members.find(function(x){return x.id===msg.memberId;}); if(!m) return'';
+    const own=meForChat&&msg.memberId===meForChat.id;
     const t=new Date(msg.ts).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-    return`<div class="chat-msg ${own?'own':''}">
-      <div class="chat-av" style="background:${m.color}">${m.photo?`<img src="${m.photo}">`:m.name[0]}</div>
-      <div>${!own?`<div class="chat-who">${m.name} · ${t}</div>`:''}
-      <div class="chat-bubble">${msg.text}</div>
-      ${own?`<div class="chat-who" style="text-align:right;margin-top:3px;">${t}</div>`:''}</div></div>`;
+    // Reactions
+    const reactionCounts={};
+    REACT_EMOJIS.forEach(function(emoji){
+      const key=msg.id+'_'+emoji;
+      if(_reactions[key]&&_reactions[key].length>0) reactionCounts[emoji]=_reactions[key].length;
+    });
+    const reactBtns=Object.entries(reactionCounts).map(function(entry){
+      const emoji=entry[0],count=entry[1];
+      const key=msg.id+'_'+emoji;
+      const meReacted=meForChat&&_reactions[key]&&_reactions[key].includes(meForChat.id);
+      const activeClass = meReacted?' active':'';
+      return '<button class="chat-reaction-btn'+activeClass+'" onclick="toggleReaction(\''+msg.id+'\',\''+emoji+'\')">'+emoji+' '+count+'</button>';
+    }).join('');
+    const pickerBtns=REACT_EMOJIS.map(function(emoji){
+      return '<button class="chat-reaction-pick-btn" onclick="toggleReaction(\''+msg.id+'\',\''+emoji+'\')">'+emoji+'</button>';
+    }).join('');
+    // Content (image or text)
+    const isImg=msg.text&&msg.text.startsWith('[IMG]');
+    const bubbleContent=isImg?'<img src="'+msg.text.slice(5)+'" class="chat-photo-msg" onclick="window.open(this.src)">':msg.text;
+    return'<div class="chat-msg '+(own?'own':'')+'" style="flex-direction:'+(own?'row-reverse':'row')+'">'
+      +'<div class="chat-av" style="background:'+m.color+'">'+(m.photo?'<img src="'+m.photo+'">':m.name[0])+'</div>'
+      +'<div style="max-width:76%;">'
+      +(!own?'<div class="chat-who">'+m.name+' · '+t+'</div>':'')
+      +'<div class="chat-bubble">'+bubbleContent+'</div>'
+      +(own?'<div class="chat-who" style="text-align:right;margin-top:3px;">'+t+'</div>':'')
+      +(reactBtns?'<div class="chat-reactions">'+reactBtns+'</div>':'')
+      +'<div class="chat-reaction-picker">'+pickerBtns+'</div>'
+      +'</div></div>';
   }).join('');
   const c=document.getElementById('chatMessages'); c.scrollTop=c.scrollHeight;
 }
@@ -1579,6 +1673,94 @@ async function saveProject(){
   });
   if(error){showToast('⚠️ Erreur création projet');console.error(error);return;}
   S.memberIds=[];closeModal('projectModal');showToast('🚀 Projet créé !');
+}
+
+// ── BUDGET FAMILIAL ───────────────────────────────
+let _budgetItems = JSON.parse(localStorage.getItem('familysync_budget')||'[]');
+function saveBudget(){ localStorage.setItem('familysync_budget', JSON.stringify(_budgetItems)); }
+
+const BUDGET_CATS = [
+  {key:'sport',emoji:'⚽',label:'Sport',color:'#4ECDC4'},
+  {key:'school',emoji:'📚',label:'École',color:'#A78BFA'},
+  {key:'food',emoji:'🛒',label:'Courses',color:'#82E0A8'},
+  {key:'health',emoji:'🏥',label:'Santé',color:'#F472B6'},
+  {key:'leisure',emoji:'🎉',label:'Loisirs',color:'#FFB347'},
+  {key:'other',emoji:'💸',label:'Autre',color:'#60A5FA'},
+];
+
+function openAddBudget(){
+  const cats = BUDGET_CATS.map(c=>'<option value="'+c.key+'">'+c.emoji+' '+c.label+'</option>').join('');
+  const members = S.members.map(m=>'<option value="'+m.id+'">'+m.name+'</option>').join('');
+  const box = document.createElement('div');
+  box.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
+  box.innerHTML='<div style="background:var(--white);border-radius:24px;padding:28px;min-width:320px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.3);">'
+    +'<div style="font-family:\'Baloo 2\',sans-serif;font-size:20px;font-weight:800;margin-bottom:20px;">💶 Nouvelle dépense</div>'
+    +'<input id="budgetDesc" class="form-input" placeholder="Description (ex: Équipement sport…)" style="margin-bottom:10px;width:100%;"><br>'
+    +'<input id="budgetAmount" class="form-input" type="number" placeholder="Montant (€)" style="margin-bottom:10px;width:100%;"><br>'
+    +'<select id="budgetCat" class="form-input" style="margin-bottom:10px;width:100%;">'+cats+'</select>'
+    +'<select id="budgetMember" class="form-input" style="margin-bottom:20px;width:100%;"><option value="">Qui a payé ?</option>'+members+'</select>'
+    +'<div style="display:flex;gap:10px;">'
+    +'<button class="btn btn-ghost" style="flex:1" onclick="this.closest(\'div[style*=inset]\').remove()">Annuler</button>'
+    +'<button class="btn btn-primary" style="flex:1" onclick="saveBudgetItem()">Ajouter 💶</button>'
+    +'</div></div>';
+  document.body.appendChild(box);
+}
+
+function saveBudgetItem(){
+  const desc = document.getElementById('budgetDesc').value.trim();
+  const amount = parseFloat(document.getElementById('budgetAmount').value);
+  const cat = document.getElementById('budgetCat').value;
+  const memberId = parseInt(document.getElementById('budgetMember').value)||null;
+  if(!desc||!amount){ showToast('⚠️ Remplis la description et le montant'); return; }
+  _budgetItems.push({id:Date.now(),desc,amount,cat,memberId,date:new Date().toISOString().slice(0,10)});
+  saveBudget();
+  document.querySelector('div[style*="inset:0"]')?.remove();
+  renderBudget();
+  showToast('💶 Dépense ajoutée !');
+}
+
+function renderBudget(){
+  const statsEl = document.getElementById('budgetStats');
+  const listEl  = document.getElementById('budgetList');
+  if(!statsEl||!listEl) return;
+  const total = _budgetItems.reduce((s,i)=>s+i.amount, 0);
+  const thisMonth = new Date().toISOString().slice(0,7);
+  const monthItems = _budgetItems.filter(i=>i.date.startsWith(thisMonth));
+  const monthTotal = monthItems.reduce((s,i)=>s+i.amount, 0);
+  const monthCount = monthItems.length;
+
+  statsEl.innerHTML =
+    '<div style="background:linear-gradient(135deg,#f97316,#fb923c);border-radius:16px;padding:12px;color:white;text-align:center;">'
+    +'<div style="font-size:11px;font-weight:700;opacity:.8;">TOTAL</div>'
+    +'<div style="font-size:22px;font-weight:900;font-family:\'Baloo 2\',sans-serif;">'+total.toFixed(0)+'€</div></div>'
+    +'<div style="background:linear-gradient(135deg,#fbbf24,#f59e0b);border-radius:16px;padding:12px;color:white;text-align:center;">'
+    +'<div style="font-size:11px;font-weight:700;opacity:.8;">CE MOIS</div>'
+    +'<div style="font-size:22px;font-weight:900;font-family:\'Baloo 2\',sans-serif;">'+monthTotal.toFixed(0)+'€</div></div>'
+    +'<div style="background:linear-gradient(135deg,#a78bfa,#818cf8);border-radius:16px;padding:12px;color:white;text-align:center;">'
+    +'<div style="font-size:11px;font-weight:700;opacity:.8;">DÉPENSES / MOIS</div>'
+    +'<div style="font-size:22px;font-weight:900;font-family:\'Baloo 2\',sans-serif;">'+monthCount+'</div></div>';
+
+  if(!_budgetItems.length){
+    listEl.innerHTML='<div style="text-align:center;color:rgba(45,43,85,.3);padding:20px;font-size:13px;">Aucune dépense 💸</div>';
+    return;
+  }
+  listEl.innerHTML = [..._budgetItems].reverse().slice(0,20).map(function(item){
+    const cat = BUDGET_CATS.find(c=>c.key===item.cat)||BUDGET_CATS[5];
+    const member = S.members.find(m=>m.id===item.memberId);
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(249,115,22,.06);border-radius:12px;">'
+      +'<div style="width:36px;height:36px;border-radius:50%;background:'+cat.color+';display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">'+cat.emoji+'</div>'
+      +'<div style="flex:1;"><div style="font-weight:700;font-size:13px;">'+item.desc+'</div>'
+      +'<div style="font-size:11px;color:rgba(45,43,85,.4);">'+item.date+(member?' · '+member.name:'')+'</div></div>'
+      +'<div style="font-weight:900;font-size:15px;color:#f97316;">'+item.amount.toFixed(2)+'€</div>'
+      +'<button onclick="deleteBudgetItem('+item.id+')" style="background:none;border:none;cursor:pointer;font-size:14px;opacity:.4;">🗑️</button>'
+      +'</div>';
+  }).join('');
+}
+
+function deleteBudgetItem(id){
+  _budgetItems = _budgetItems.filter(i=>i.id!==id);
+  saveBudget(); renderBudget();
+  showToast('🗑️ Dépense supprimée');
 }
 
 // ── LISTE DE COURSES ──────────────────────────────
