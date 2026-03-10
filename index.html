@@ -833,17 +833,18 @@ const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 // ── SYNC HELPERS ──────────────────────────────────
 async function dbLoad(){
   try {
-    const [mem,evt,prj,cht] = await Promise.all([
+    const [mem,evt,prj,cht,shp] = await Promise.all([
       sb.from('members').select('*').order('id'),
       sb.from('events').select('*').order('id'),
       sb.from('projects').select('*').order('id'),
       sb.from('chats').select('*').order('ts'),
       sb.from('shopping').select('*').order('created_at'),
     ]);
-    S.members  = (mem.data||[]).map(r=>({id:r.id,name:r.name,role:r.role,color:r.color,photo:r.photo}));
-    S.events   = (evt.data||[]).map(r=>({id:r.id,title:r.title,date:r.date,dateEnd:r.date_end,time:r.time,timeEnd:r.time_end,cat:r.cat,memberIds:r.member_ids||[],location:r.location,note:r.note,recurrence:r.recurrence,recurGroupId:r.recur_group_id}));
-    S.projects = (prj.data||[]).map(r=>({id:r.id,name:r.name,emoji:r.emoji,desc:r.description,date:r.date,budget:r.budget,progress:r.progress||0,memberIds:r.member_ids||[]}));
-    S.chats    = (cht.data||[]).map(r=>({id:r.id,memberId:r.member_id,text:r.text,ts:r.ts}));
+    S.members   = (mem.data||[]).map(r=>({id:r.id,name:r.name,role:r.role,color:r.color,photo:r.photo}));
+    S.events    = (evt.data||[]).map(r=>({id:r.id,title:r.title,date:r.date,dateEnd:r.date_end,time:r.time,timeEnd:r.time_end,cat:r.cat,memberIds:r.member_ids||[],location:r.location,note:r.note,recurrence:r.recurrence,recurGroupId:r.recur_group_id}));
+    S.projects  = (prj.data||[]).map(r=>({id:r.id,name:r.name,emoji:r.emoji,desc:r.description,date:r.date,budget:r.budget,progress:r.progress||0,memberIds:r.member_ids||[]}));
+    S.chats     = (cht.data||[]).map(r=>({id:r.id,memberId:r.member_id,text:r.text,ts:r.ts}));
+    S.shopItems = (shp.data||[]).map(r=>({id:r.id,name:r.name,emoji:r.emoji,category:r.category,done:r.done,memberId:r.member_id,createdAt:r.created_at}));
     renderAll();
     showToast('🔄 Données synchronisées !');
   } catch(e){ showToast('⚠️ Erreur de chargement'); console.error(e); }
@@ -950,6 +951,7 @@ let S={
   events:[],
   projects:[],
   chats:[],
+  shopItems:[],
   month:new Date().getMonth(),year:new Date().getFullYear(),cat:'sport',memberIds:[],color:COLORS[0],photo:null,
 };
 
