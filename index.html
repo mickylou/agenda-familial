@@ -482,6 +482,17 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
 .chat-who-av{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:white;overflow:hidden;}
 .chat-who-av img{width:100%;height:100%;object-fit:cover;}
 
+
+/* ══ VUE SEMAINE ══ */
+.week-grid{display:grid;grid-template-columns:60px repeat(7,1fr);gap:0;background:var(--white);border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--sh);}
+.week-header-cell{padding:12px 4px;text-align:center;font-size:12px;font-weight:800;color:var(--dark);background:linear-gradient(135deg,#A78BFA22,#60A5FA11);border-bottom:2px solid rgba(45,43,85,.06);}
+.week-header-cell.today-col{background:linear-gradient(135deg,var(--grape),var(--blue));color:white;border-radius:0;}
+.week-hour-label{padding:8px 8px;font-size:10px;font-weight:700;color:rgba(45,43,85,.35);text-align:right;border-right:2px solid rgba(45,43,85,.06);line-height:1;}
+.week-slot{min-height:48px;border-bottom:1px solid rgba(45,43,85,.04);border-right:1px solid rgba(45,43,85,.04);position:relative;cursor:pointer;transition:background .15s;}
+.week-slot:hover{background:rgba(167,139,250,.06);}
+.week-evt-block{position:absolute;left:2px;right:2px;border-radius:8px;padding:3px 6px;font-size:10px;font-weight:800;color:white;overflow:hidden;cursor:pointer;z-index:2;box-shadow:0 2px 6px rgba(0,0,0,.15);}
+.week-nav{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+
 </style>
 </head>
 <body>
@@ -513,6 +524,9 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
     </div>
     <div>
       <div class="slabel">Notre famille</div>
+      <div id="meSelector" style="margin-bottom:8px;padding:8px 12px;background:rgba(255,255,255,.06);border-radius:var(--r-md);font-size:11px;color:rgba(255,255,255,.5);font-weight:700;">
+        👤 <span id="meSelectorText">Qui es-tu ? Clique sur ton nom ↓</span>
+      </div>
       <div class="members-list" id="membersList"></div>
       <button class="add-member-btn" onclick="openAddMember()"><span style="font-size:16px;">＋</span> Ajouter un membre</button>
     </div>
@@ -539,9 +553,9 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
     <div class="page-title">📅 Calendrier familial</div>
     <div class="topbar-actions">
       <div class="view-switcher">
-        <button class="view-btn active" onclick="setView('month',this)">Mois</button>
-        <button class="view-btn" onclick="setView('week',this)">Semaine</button>
-        <button class="view-btn" onclick="setView('list',this)">Liste</button>
+        <button class="view-btn active" onclick="setView('month',this);document.querySelector('.upcoming-section').style.display=''">Mois</button>
+        <button class="view-btn" onclick="setView('week',this);document.querySelector('.upcoming-section').style.display='none'">Semaine</button>
+        <button class="view-btn" onclick="setView('list',this);document.querySelector('.upcoming-section').style.display=''">Liste</button>
       </div>
       <button class="btn btn-ghost" onclick="openAddMember()" style="font-size:13px;padding:9px 16px;">👥 Membres</button>
       <button class="btn btn-primary" onclick="openAddEvent()">＋ Ajouter ✨</button>
@@ -840,7 +854,7 @@ async function dbLoad(){
       sb.from('chats').select('*').order('ts'),
       sb.from('shopping').select('*').order('created_at'),
     ]);
-    S.members   = (mem.data||[]).map(r=>({id:r.id,name:r.name,role:r.role,color:r.color,photo:r.photo}));
+    S.members   = (mem.data||[]).map(r=>({id:r.id,name:r.name,role:r.role,color:r.color,photo:r.photo,birthday:r.birthday}));
     S.events    = (evt.data||[]).map(r=>({id:r.id,title:r.title,date:r.date,dateEnd:r.date_end,time:r.time,timeEnd:r.time_end,cat:r.cat,memberIds:r.member_ids||[],location:r.location,note:r.note,recurrence:r.recurrence,recurGroupId:r.recur_group_id}));
     S.projects  = (prj.data||[]).map(r=>({id:r.id,name:r.name,emoji:r.emoji,desc:r.description,date:r.date,budget:r.budget,progress:r.progress||0,memberIds:r.member_ids||[]}));
     S.chats     = (cht.data||[]).map(r=>({id:r.id,memberId:r.member_id,text:r.text,ts:r.ts}));
@@ -917,6 +931,94 @@ function renderWidget(){
     </div>`).join('');
 }
 
+// ── VUE SEMAINE ──────────────────────────────────
+let _currentView = 'month';
+
+function setView(v, btn){
+  _currentView = v;
+  document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));
+  if(btn) btn.classList.add('active');
+  const main = document.querySelector('.main');
+  renderViewContent();
+}
+
+function renderViewContent(){
+  const upSection = document.querySelector('.upcoming-section');
+  if(_currentView==='week'){ renderWeekView(); }
+  else { if(upSection) upSection.style.display=''; renderCalendar(); renderEvents(); }
+}
+
+function renderWeekView(){
+  const calSection = document.querySelector('.calendar-section');
+  const upSection  = document.querySelector('.upcoming-section');
+  if(!calSection||!upSection) return;
+
+  const CATS_COL={sport:'#4ECDC4',riding:'#C084FC',school:'#A78BFA',medical:'#F472B6',social:'#FF6B6B',family:'#82E0A8',leisure:'#FFB347'};
+  const today = new Date();
+  const todayStr = today.toISOString().slice(0,10);
+  if(!S.weekStart){
+    const dow = today.getDay();
+    const mon = new Date(today); mon.setDate(today.getDate()-(dow===0?6:dow-1));
+    S.weekStart = mon;
+  }
+  const ws = new Date(S.weekStart);
+  const days = [];
+  for(let i=0;i<7;i++){const d=new Date(ws);d.setDate(ws.getDate()+i);days.push(d);}
+  const dayNames=['Lun','Mar','Mer','Jeu','Ven','Sam','Dim'];
+
+  // Header
+  let html = '<div class="week-nav">';
+  html += '<button class="cal-nav-btn" onclick="shiftWeek(-1)">‹</button>';
+  html += '<span style="font-family:\'Baloo 2\',sans-serif;font-size:16px;font-weight:700;">';
+  html += days[0].toLocaleDateString('fr-FR',{day:'numeric',month:'long'}) + ' – ' + days[6].toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'});
+  html += '</span>';
+  html += '<button class="cal-nav-btn" onclick="shiftWeek(1)">›</button>';
+  html += '<button class="cal-today-btn" onclick="S.weekStart=null;renderWeekView()">Aujourd\'hui</button>';
+  html += '</div><div class="week-grid">';
+
+  // Time column header
+  html += '<div class="week-header-cell" style="border-right:2px solid rgba(45,43,85,.06);">⏰</div>';
+
+  // Day headers
+  for(let i=0;i<7;i++){
+    const ds = days[i].toISOString().slice(0,10);
+    const isToday = ds===todayStr;
+    html += '<div class="week-header-cell ' + (isToday?'today-col':'') + '">';
+    html += dayNames[i] + '<br><span style="font-size:18px;font-family:\'Baloo 2\',sans-serif;">' + days[i].getDate() + '</span>';
+    html += '</div>';
+  }
+
+  // Hour rows (6h–23h only)
+  for(let h=6;h<=23;h++){
+    const hStr = String(h).padStart(2,'0') + ':00';
+    html += '<div class="week-hour-label">' + hStr + '</div>';
+    for(let di=0;di<7;di++){
+      const ds = days[di].toISOString().slice(0,10);
+      const evts = getFilteredEvents().filter(function(e){
+        return e.date===ds && e.time && parseInt(e.time.split(':')[0])===h;
+      });
+      html += '<div class="week-slot" onclick="dayClick(\'' + ds + '\')">';
+      for(let ei=0;ei<evts.length;ei++){
+        const e = evts[ei];
+        const col = CATS_COL[e.cat]||'#A78BFA';
+        html += '<div class="week-evt-block" style="background:' + col + '" onclick="event.stopPropagation();openEditEvent(' + e.id + ')">' + e.title + '</div>';
+      }
+      html += '</div>';
+    }
+  }
+  html += '</div>';
+
+  calSection.innerHTML = html;
+  upSection.style.display = 'none';
+}
+
+function shiftWeek(dir){
+  if(!S.weekStart) { const t=new Date(); const dow=t.getDay(); const m=new Date(t); m.setDate(t.getDate()-(dow===0?6:dow-1)); S.weekStart=m; }
+  S.weekStart = new Date(S.weekStart);
+  S.weekStart.setDate(S.weekStart.getDate() + dir*7);
+  renderWeekView();
+}
+
 function renderAll(){
   renderSidebar();renderCalendar();renderEvents();renderChat();renderProjects();renderShop();
   renderCatGrid();renderMembersPicker('membersPicker');renderQuickbar();renderWidget();
@@ -952,8 +1054,11 @@ let S={
   projects:[],
   chats:[],
   shopItems:[],
-  month:new Date().getMonth(),year:new Date().getFullYear(),cat:'sport',memberIds:[],color:COLORS[0],photo:null,
+  month:new Date().getMonth(),year:new Date().getFullYear(),weekStart:null,cat:'sport',memberIds:[],color:COLORS[0],photo:null,
 };
+let _myMemberId = localStorage.getItem('familysync_me') ? parseInt(localStorage.getItem('familysync_me')) : null;
+function setMe(id){ _myMemberId=id; localStorage.setItem('familysync_me',id); renderSidebar(); renderChat(); showToast('✅ Profil sélectionné !'); }
+function getMe(){ return S.members.find(m=>m.id===_myMemberId)||S.members[0]||null; }
 
 async function init(){
   renderCatGrid();renderMembersPicker('membersPicker');renderProjTypes();renderColorPicker();
@@ -1094,7 +1199,7 @@ function renderCalendar(){
   while(cells.length%7!==0) cells.push({day:cells.length-(sd+dim)+1,om:true});
   const CATS_COL={sport:'#4ECDC4',riding:'#C084FC',school:'#A78BFA',medical:'#F472B6',social:'#FF6B6B',family:'#82E0A8',leisure:'#FFB347'};
   document.getElementById('calDays').innerHTML=cells.map(c=>{
-    const evts=c.date?S.events.filter(e=>e.date===c.date||(e.dateEnd&&c.date>=e.date&&c.date<=e.dateEnd)):[];
+    const evts=c.date?getFilteredEvents().filter(e=>e.date===c.date||(e.dateEnd&&c.date>=e.date&&c.date<=e.dateEnd)):[];
     const pills=evts.slice(0,3).map(e=>{
       const col=CATS_COL[e.cat]||'#A78BFA';
       const cat=CATS.find(x=>x.key===e.cat);
@@ -1162,7 +1267,7 @@ function renderChatWho(){
   if(!S.members.length) return;
   if(!_chatMemberId) _chatMemberId = S.members[0].id;
   const row = document.getElementById('chatWhoRow');
-  if(!row) return;
+  if(!row||!S.members.length) return;
   row.innerHTML = '<span style="font-size:11px;font-weight:700;color:rgba(45,43,85,.4);align-self:center;">Qui écrit ? </span>' +
     S.members.map(m=>`
     <button class="chat-who-btn ${_chatMemberId===m.id?'active':''}" onclick="setChatMember(${m.id})">
@@ -1178,7 +1283,7 @@ function renderChat(){
   renderChatWho();
   document.getElementById('chatMessages').innerHTML=S.chats.map(msg=>{
     const m=S.members.find(x=>x.id===msg.memberId); if(!m) return'';
-    const own=msg.memberId===_chatMemberId;
+    const me=getMe(); const own=me&&msg.memberId===me.id;
     const t=new Date(msg.ts).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
     return`<div class="chat-msg ${own?'own':''}">
       <div class="chat-av" style="background:${m.color}">${m.photo?`<img src="${m.photo}">`:m.name[0]}</div>
@@ -1192,9 +1297,10 @@ function renderChat(){
 async function sendChat(){
   const i=document.getElementById('chatInput'), t=i.value.trim(); if(!t) return;
   if(!S.members.length){showToast("⚠️ Ajoute d'abord un membre !");return;}
-  if(!_chatMemberId) _chatMemberId = S.members[0].id;
+  const chatMe = getMe();
+  if(!chatMe){showToast("⚠️ Sélectionne ton profil d'abord !");return;}
   i.value='';
-  const {error}=await sb.from('chats').insert({member_id:_chatMemberId,text:t,ts:Date.now()});
+  const {error}=await sb.from('chats').insert({member_id:chatMe.id,text:t,ts:Date.now()});
   if(error){showToast('⚠️ Erreur envoi');console.error(error);return;}
   showToast('💬 Message envoyé !');
 }
@@ -1535,7 +1641,7 @@ async function addShopItem(){
   const sel = document.getElementById('shopCatSel');
   const emoji = sel.value;
   const catLabel = sel.options[sel.selectedIndex].text.split(' ').slice(1).join(' ');
-  const memberId = S.members[0]?.id || null;
+  const memberId = getMe()?.id || null;
   const payload = { name, emoji, category: catLabel, done: false, member_id: memberId, created_at: String(Date.now()) };
   const {data, error} = await sb.from('shopping').insert(payload).select();
   if(error){ 
@@ -1627,7 +1733,17 @@ async function deleteEvent(){
 
 function setNav(el){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));el.classList.add('active');}
 function setView(v,btn){document.querySelectorAll('.view-btn').forEach(b=>b.classList.remove('active'));btn.classList.add('active');showToast(`📅 Vue "${v==='month'?'Mois':v==='week'?'Semaine':'Liste'}" activée`);}
-function filterMember(id){showToast(`👤 Filtrage : ${S.members.find(m=>m.id===id)?.name||''}`);}
+let _filterMemberId = null;
+function filterMember(id){
+  _filterMemberId = (_filterMemberId===id) ? null : id;
+  const name = S.members.find(m=>m.id===id)?.name||'';
+  showToast(_filterMemberId ? `👤 Filtre : ${name}` : '👥 Tous les membres');
+  renderCalendar(); renderEvents(); renderWidget();
+}
+function getFilteredEvents(){
+  if(!_filterMemberId) return S.events;
+  return S.events.filter(e=>(e.memberIds||[]).includes(_filterMemberId));
+}
 
 function showToast(msg){
   const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
