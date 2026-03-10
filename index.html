@@ -957,6 +957,69 @@ const SUPA_KEY = 'sb_publishable_aebzPl1dqnJWM8Iq99XQPg_xvlNH4Zq';
 const sb = supabase.createClient(SUPA_URL, SUPA_KEY);
 
 // ── SYNC HELPERS ──────────────────────────────────
+// ── THÈME SAISONNIER ─────────────────────────────
+function applySeason(){
+  const m = new Date().getMonth()+1;
+  document.body.classList.remove('season-spring','season-summer','season-autumn','season-winter');
+  if(m>=3&&m<=5) document.body.classList.add('season-spring');
+  else if(m>=6&&m<=8) document.body.classList.add('season-summer');
+  else if(m>=9&&m<=11) document.body.classList.add('season-autumn');
+  else document.body.classList.add('season-winter');
+}
+
+// ── THÈME SOMBRE ──────────────────────────────────
+function applyDarkAuto(){
+  const h = new Date().getHours();
+  const isDark = localStorage.getItem('familysync_dark');
+  const btn = document.getElementById('darkBtn');
+  if(isDark==='1'){ document.body.classList.add('dark-mode'); if(btn) btn.textContent='☀️'; }
+  else if(isDark==='0'){ document.body.classList.remove('dark-mode'); if(btn) btn.textContent='🌙'; }
+  else if(h>=21||h<7){ document.body.classList.add('dark-mode'); if(btn) btn.textContent='☀️'; }
+  else{ document.body.classList.remove('dark-mode'); if(btn) btn.textContent='🌙'; }
+}
+
+function toggleDark(){
+  const isDark = document.body.classList.toggle('dark-mode');
+  localStorage.setItem('familysync_dark', isDark?'1':'0');
+  const btn = document.getElementById('darkBtn');
+  if(btn) btn.textContent = isDark?'☀️':'🌙';
+  showToast(isDark?'🌙 Mode nuit activé':'☀️ Mode jour activé');
+}
+
+// ── MÉTÉO ─────────────────────────────────────────
+async function fetchWeather(){
+  const el = document.getElementById('weatherWidget');
+  if(!el) return;
+  try {
+    const pos = await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{timeout:5000}));
+    const {latitude:lat, longitude:lon} = pos.coords;
+    const resp = await fetch('https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current_weather=true&timezone=auto');
+    const data = await resp.json();
+    const w = data.current_weather;
+    const temp = Math.round(w.temperature);
+    const code = w.weathercode;
+    let emoji='☀️', desc='Ensoleillé';
+    if(code===0){emoji='☀️';desc='Ensoleillé';}
+    else if(code<=2){emoji='⛅';desc='Nuageux';}
+    else if(code<=3){emoji='☁️';desc='Couvert';}
+    else if(code<=49){emoji='🌫️';desc='Brumeux';}
+    else if(code<=69){emoji='🌧️';desc='Pluie';}
+    else if(code<=79){emoji='❄️';desc='Neige';}
+    else if(code<=82){emoji='🌧️';desc='Averses';}
+    else{emoji='⛈️';desc='Orage';}
+    el.innerHTML='<span style="font-size:26px;">'+emoji+'</span><div><div style="font-size:17px;font-weight:800;">'+temp+'°C</div><div style="font-size:11px;opacity:.8;">'+desc+'</div></div>';
+  } catch(e){
+    el.innerHTML='<span style="font-size:13px;opacity:.5;">🌡️ Météo non disponible</span>';
+  }
+}
+
+// ── LOGO FUN ──────────────────────────────────────
+function funLogoClick(){
+  const logo = document.querySelector('.logo-bubble');
+  if(logo){ logo.classList.remove('wiggle-fast'); void logo.offsetWidth; logo.classList.add('wiggle-fast'); setTimeout(()=>logo.classList.remove('wiggle-fast'),500); }
+  launchConfetti(20);
+}
+
 function closeTopModal(){
   const el = document.querySelector('div[style*="inset:0"]');
   if(el) el.remove();
@@ -2177,13 +2240,7 @@ function renderActiveVote(){
 }
 
 // ── LOGO WIGGLE ON CLICK ───────────────────────────
-function funLogoClick(){
-  const logo = document.querySelector('.logo-bubble');
-  if(!logo) return;
-  logo.classList.remove('wiggle-fast'); void logo.offsetWidth; logo.classList.add('wiggle-fast');
-  setTimeout(()=>logo.classList.remove('wiggle-fast'),500);
-  launchConfetti(15);
-}
+
 
 function showToast(msg){
   const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');
