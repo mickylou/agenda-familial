@@ -476,6 +476,12 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
 .shop-progress-bar{height:100%;border-radius:3px;background:linear-gradient(90deg,var(--mint),var(--lime));transition:width .4s ease;}
 .shop-stats{font-size:12px;color:rgba(45,43,85,.4);font-weight:700;padding:0 16px 10px;}
 
+
+.chat-who-btn{padding:5px 10px;border-radius:20px;border:2px solid rgba(45,43,85,.1);background:white;font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;cursor:pointer;transition:all .2s;color:var(--dark);display:flex;align-items:center;gap:5px;}
+.chat-who-btn.active{border-color:var(--coral);background:linear-gradient(135deg,#FF6B6B20,#FFA07A10);}
+.chat-who-av{width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:800;color:white;overflow:hidden;}
+.chat-who-av img{width:100%;height:100%;object-fit:cover;}
+
 </style>
 </head>
 <body>
@@ -635,8 +641,11 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
         </div>
         <div class="chat-messages" id="chatMessages"></div>
         <div class="chat-input-row">
-          <input class="chat-input" id="chatInput" placeholder="Écrire un message… 😊" onkeydown="if(event.key==='Enter')sendChat()">
-          <button class="chat-send" onclick="sendChat()">➤</button>
+          <div id="chatWhoRow" style="display:flex;gap:6px;padding:6px 12px 0;flex-wrap:wrap;"></div>
+          <div style="display:flex;gap:8px;padding:8px 12px;">
+            <input class="chat-input" id="chatInput" placeholder="Écrire un message… 😊" onkeydown="if(event.key==='Enter')sendChat()" style="flex:1;">
+            <button class="chat-send" onclick="sendChat()">➤</button>
+          </div>
         </div>
       </div>
     </div>
@@ -1145,11 +1154,29 @@ function detectConflicts(){
   return c;
 }
 
+let _chatMemberId = null;
+
+function renderChatWho(){
+  if(!S.members.length) return;
+  if(!_chatMemberId) _chatMemberId = S.members[0].id;
+  const row = document.getElementById('chatWhoRow');
+  if(!row) return;
+  row.innerHTML = '<span style="font-size:11px;font-weight:700;color:rgba(45,43,85,.4);align-self:center;">Qui écrit ? </span>' +
+    S.members.map(m=>`
+    <button class="chat-who-btn ${_chatMemberId===m.id?'active':''}" onclick="setChatMember(${m.id})">
+      <div class="chat-who-av" style="background:${m.color}">${m.photo?`<img src="${m.photo}">`:m.name[0]}</div>
+      ${m.name}
+    </button>`).join('');
+}
+
+function setChatMember(id){ _chatMemberId = id; renderChatWho(); }
+
 function renderChat(){
-  const me=S.members[0];
+  if(!_chatMemberId && S.members.length) _chatMemberId = S.members[0].id;
+  renderChatWho();
   document.getElementById('chatMessages').innerHTML=S.chats.map(msg=>{
     const m=S.members.find(x=>x.id===msg.memberId); if(!m) return'';
-    const own=msg.memberId===me.id;
+    const own=msg.memberId===_chatMemberId;
     const t=new Date(msg.ts).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
     return`<div class="chat-msg ${own?'own':''}">
       <div class="chat-av" style="background:${m.color}">${m.photo?`<img src="${m.photo}">`:m.name[0]}</div>
@@ -1163,8 +1190,9 @@ function renderChat(){
 async function sendChat(){
   const i=document.getElementById('chatInput'), t=i.value.trim(); if(!t) return;
   if(!S.members.length){showToast("⚠️ Ajoute d'abord un membre !");return;}
+  if(!_chatMemberId) _chatMemberId = S.members[0].id;
   i.value='';
-  const {error}=await sb.from('chats').insert({member_id:S.members[0].id,text:t,ts:Date.now()});
+  const {error}=await sb.from('chats').insert({member_id:_chatMemberId,text:t,ts:Date.now()});
   if(error){showToast('⚠️ Erreur envoi');console.error(error);return;}
   showToast('💬 Message envoyé !');
 }
@@ -1506,17 +1534,15 @@ async function addShopItem(){
   const emoji = sel.value;
   const catLabel = sel.options[sel.selectedIndex].text.split(' ').slice(1).join(' ');
   const memberId = S.members[0]?.id || null;
-  const payload = { name, emoji, category: catLabel, done: false, member_id: memberId };
-  console.log('Adding shop item:', payload);
+  const payload = { name, emoji, category: catLabel, done: false, member_id: memberId, created_at: String(Date.now()) };
   const {data, error} = await sb.from('shopping').insert(payload).select();
   if(error){ 
     showToast('⚠️ Erreur: ' + error.message); 
     console.error('Shop insert error:', error); 
     return; 
   }
-  console.log('Added:', data);
   input.value = '';
-  showToast('🛒 Article ajouté !');
+  showToast('🛒 ' + name + ' ajouté !');
   await dbLoad();
   renderShop();
 }
