@@ -282,7 +282,49 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
 /* TOAST */
 .toast{position:fixed;bottom:24px;right:24px;background:var(--dark);color:white;border-radius:var(--r-lg);padding:14px 20px;font-size:14px;font-weight:700;box-shadow:var(--sh-lg);z-index:2000;display:flex;align-items:center;gap:10px;transform:translateY(20px) scale(.9);opacity:0;pointer-events:none;transition:all .3s cubic-bezier(.175,.885,.32,1.275);max-width:340px;border:2px solid rgba(255,255,255,.1);}
 .toast.show{transform:none;opacity:1;}
-@media(max-width:900px){.app{grid-template-columns:1fr;grid-template-rows:auto auto 1fr;}.sidebar{display:none;}.topbar{grid-column:1;grid-row:1;}.quickbar{grid-column:1;grid-row:2;}.main{grid-column:1;grid-row:3;}.stats-row{grid-template-columns:repeat(2,1fr);}.upcoming-section{grid-template-columns:1fr;}}
+/* ══ RESPONSIVE ══════════════════════════════════ */
+@media(max-width:900px){
+  .app{grid-template-columns:1fr;grid-template-rows:auto auto 1fr;}
+  .sidebar{display:none;}
+  .topbar{grid-column:1;grid-row:1;padding:10px 14px;gap:8px;flex-wrap:wrap;}
+  .page-title{font-size:16px;}
+  .topbar-actions{gap:6px;flex-wrap:wrap;}
+  .view-switcher button{padding:6px 10px;font-size:12px;}
+  .btn{padding:7px 12px;font-size:12px;}
+  .quickbar{grid-column:1;grid-row:2;padding:10px 12px;gap:7px;flex-wrap:wrap;}
+  .qb-input{min-width:120px!important;font-size:13px;}
+  .main{grid-column:1;grid-row:3;padding:12px;}
+  .stats-row{grid-template-columns:repeat(2,1fr);gap:10px;}
+  .stat-value{font-size:28px;}
+  .upcoming-section{grid-template-columns:1fr;}
+  .dw-widget{border-radius:16px;}
+  .shop-panel,.project-panel{padding:0;}
+  .modal{width:96vw!important;max-height:92vh;overflow-y:auto;}
+  .modal-body{padding:14px 16px;}
+  .modal-header{padding:16px;}
+  .modal-footer{padding:10px 16px 16px;flex-wrap:wrap;}
+  .chat-panel{min-height:300px;}
+  .family-member-chip{padding:8px 10px;}
+  .chip-av{width:36px;height:36px;font-size:14px;}
+}
+@media(max-width:600px){
+  .stats-row{grid-template-columns:repeat(2,1fr);gap:8px;}
+  .stat-card{padding:14px 12px;}
+  .stat-value{font-size:24px;}
+  .topbar{padding:8px 10px;}
+  .page-title{font-size:14px;}
+  .topbar-actions .btn-ghost:not(#darkBtn){display:none;}
+  .quickbar{gap:5px;}
+  .qb-input{min-width:100px!important;font-size:12px;padding:8px 10px;}
+  .qb-add{padding:9px 14px;font-size:13px;}
+  .upcoming-section{gap:10px;}
+  .cal-day{min-height:52px;font-size:12px;}
+  .event-pill{font-size:10px;padding:2px 6px;}
+  .modal{width:100vw!important;max-height:100vh;border-radius:0!important;}
+  .chat-input-row{gap:6px;}
+  .shop-add-row{flex-direction:column;gap:8px;}
+  .shop-add-row select{max-width:100%!important;}
+}
 ::-webkit-scrollbar{width:6px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:rgba(45,43,85,.15);border-radius:3px;}
 @keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
 .pulse{animation:pulse 2s infinite;}
@@ -689,8 +731,8 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
     <div class="stats-row">
       <div class="stat-card" data-emoji="📅"><div class="stat-label">Ce mois-ci</div><div class="stat-value" id="statTotal">0</div><div class="stat-sub">événements 🎉</div></div>
       <div class="stat-card" data-emoji="⚡"><div class="stat-label">Cette semaine</div><div class="stat-value" id="statWeek">0</div><div class="stat-sub">Rien de prévu</div></div>
-      <div class="stat-card" data-emoji="🎯"><div class="stat-label">Projets</div><div class="stat-value">0</div><div class="stat-sub">À créer !</div></div>
-      <div class="stat-card" data-emoji="🔥"><div class="stat-label">Conflits</div><div class="stat-value" style="color:var(--coral);">0</div><div class="stat-sub">Tout va bien 😊</div></div>
+      <div class="stat-card" data-emoji="🎯"><div class="stat-label">Projets</div><div class="stat-value" id="statProjects">0</div><div class="stat-sub" id="statProjectsSub">À créer !</div></div>
+      <div class="stat-card" data-emoji="🔥"><div class="stat-label">Conflits</div><div class="stat-value" id="statConflicts" style="color:var(--coral);">0</div><div class="stat-sub" id="statConflictsSub">Tout va bien 😊</div></div>
     </div>
 
     <!-- WIDGET DU JOUR -->
@@ -762,18 +804,6 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
             <button class="chat-send" onclick="sendChat()">➤</button>
           </div>
         </div>
-      </div>
-    </div>
-
-    <!-- BUDGET FAMILIAL -->
-    <div class="shop-panel" id="budgetPanel" style="background:linear-gradient(135deg,#fff7ed,#fffbf5);">
-      <div class="shop-header">
-        <div class="shop-title" style="color:#f97316;">💶 Budget familial</div>
-        <button class="btn btn-ghost" style="font-size:12px;" onclick="openAddBudget()">＋ Dépense</button>
-      </div>
-      <div style="padding:0 20px 12px;">
-        <div id="budgetStats" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;"></div>
-        <div id="budgetList" style="display:flex;flex-direction:column;gap:8px;max-height:280px;overflow-y:auto;"></div>
       </div>
     </div>
 
@@ -1227,7 +1257,7 @@ function shiftWeek(dir){
 }
 
 function renderAll(){
-  renderSidebar();renderCalendar();renderEvents();renderChat();renderProjects();renderShop();renderBudget();
+  renderSidebar();renderCalendar();renderEvents();renderChat();renderProjects();renderShop();
   renderCatGrid();renderMembersPicker('membersPicker');renderQuickbar();renderWidget();
   // Stats
   const today = new Date();
@@ -1243,10 +1273,10 @@ function renderAll(){
   let conflicts=0;
   Object.values(byDay).forEach(evs=>{ if(evs.length>1){ const members=new Set(evs.flatMap(e=>e.memberIds||[])); members.forEach(m=>{ if(evs.filter(e=>(e.memberIds||[]).includes(m)).length>1) conflicts++; }); }});
   // Render
-  const st = document.getElementById('statTotal'); if(st){ st.textContent=evMonth.length; st.closest('.stat-card').querySelector('.stat-sub').textContent=evMonth.length===1?'événement 🎉':'événements 🎉'; }
+  const st = document.getElementById('statTotal'); if(st){ st.textContent=evMonth.length; document.getElementById('statTotal').closest('.stat-card').querySelector('.stat-sub').textContent=evMonth.length===1?'événement 🎉':'événements 🎉'; }
   const sw = document.getElementById('statWeek'); if(sw){ sw.textContent=evWeek.length; sw.closest('.stat-card').querySelector('.stat-sub').textContent=evWeek.length>0?evWeek.length+' cette semaine':'Rien de prévu'; }
-  const sp = document.querySelectorAll('.stat-value')[2]; if(sp){ sp.textContent=S.projects.length; sp.closest('.stat-card').querySelector('.stat-sub').textContent=S.projects.length>0?'en cours 🚀':'À créer !'; }
-  const sc = document.querySelectorAll('.stat-value')[3]; if(sc){ sc.textContent=conflicts; sc.closest('.stat-card').querySelector('.stat-sub').textContent=conflicts===0?'Tout va bien 😊':conflicts+' à vérifier ⚠️'; }
+  const sp = document.getElementById('statProjects'); if(sp){ sp.textContent=S.projects.length; document.getElementById('statProjectsSub').textContent=S.projects.length>0?'en cours 🚀':'À créer !'; }
+  const sc = document.getElementById('statConflicts'); if(sc){ sc.textContent=conflicts; document.getElementById('statConflictsSub').textContent=conflicts===0?'Tout va bien 😊':conflicts+' à vérifier ⚠️'; }
   document.getElementById('agendaBadge').textContent=S.events.filter(e=>e.date>=today.toISOString().slice(0,10)).length;
 }
 
@@ -1257,6 +1287,7 @@ function setupRealtime(){
     .on('postgres_changes',{event:'*',schema:'public',table:'events'},   ()=>dbLoad())
     .on('postgres_changes',{event:'*',schema:'public',table:'projects'}, ()=>dbLoad())
     .on('postgres_changes',{event:'*',schema:'public',table:'chats'},    ()=>dbLoad())
+    .on('postgres_changes',{event:'*',schema:'public',table:'shopping'}, ()=>dbLoad())
     .subscribe();
 }
 
@@ -1293,7 +1324,6 @@ async function init(){
   await dbLoad();
   setupRealtime();
   fetchWeather();
-  renderBudget();
   renderFunMsg();
   renderJoke();
   renderActiveVote();
@@ -1844,145 +1874,7 @@ async function saveProject(){
 }
 
 // ── BUDGET FAMILIAL ───────────────────────────────
-let _budgetItems = JSON.parse(localStorage.getItem('familysync_budget')||'[]');
-function saveBudget(){ localStorage.setItem('familysync_budget', JSON.stringify(_budgetItems)); }
 
-const BUDGET_CATS = [
-  {key:'sport',emoji:'⚽',label:'Sport',color:'#4ECDC4'},
-  {key:'school',emoji:'📚',label:'École',color:'#A78BFA'},
-  {key:'food',emoji:'🛒',label:'Courses',color:'#82E0A8'},
-  {key:'health',emoji:'🏥',label:'Santé',color:'#F472B6'},
-  {key:'leisure',emoji:'🎉',label:'Loisirs',color:'#FFB347'},
-  {key:'other',emoji:'💸',label:'Autre',color:'#60A5FA'},
-];
-
-function openAddBudget(){
-  const cats = BUDGET_CATS.map(c=>'<option value="'+c.key+'">'+c.emoji+' '+c.label+'</option>').join('');
-  const members = S.members.map(m=>'<option value="'+m.id+'">'+m.name+'</option>').join('');
-  const box = document.createElement('div');
-  box.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:9999;display:flex;align-items:center;justify-content:center;';
-  box.innerHTML='<div style="background:var(--white);border-radius:24px;padding:28px;min-width:320px;max-width:90vw;box-shadow:0 20px 60px rgba(0,0,0,.3);">'
-    +'<div style="font-family:\'Baloo 2\',sans-serif;font-size:20px;font-weight:800;margin-bottom:20px;">💶 Nouvelle dépense</div>'
-    +'<input id="budgetDesc" class="form-input" placeholder="Description (ex: Équipement sport…)" style="margin-bottom:10px;width:100%;"><br>'
-    +'<input id="budgetAmount" class="form-input" type="number" placeholder="Montant (€)" style="margin-bottom:10px;width:100%;"><br>'
-    +'<select id="budgetCat" class="form-input" style="margin-bottom:10px;width:100%;">'+cats+'</select>'
-    +'<select id="budgetMember" class="form-input" style="margin-bottom:20px;width:100%;"><option value="">Qui a payé ?</option>'+members+'</select>'
-    +'<div style="display:flex;gap:10px;">'
-    +'<button class="btn btn-ghost" style="flex:1" onclick="this.closest(\'div[style*=inset]\').remove()">Annuler</button>'
-    +'<button class="btn btn-primary" style="flex:1" onclick="saveBudgetItem()">Ajouter 💶</button>'
-    +'</div></div>';
-  document.body.appendChild(box);
-}
-
-function saveBudgetItem(){
-  const desc = document.getElementById('budgetDesc').value.trim();
-  const amount = parseFloat(document.getElementById('budgetAmount').value);
-  const cat = document.getElementById('budgetCat').value;
-  const memberId = parseInt(document.getElementById('budgetMember').value)||null;
-  if(!desc||!amount){ showToast('⚠️ Remplis la description et le montant'); return; }
-  _budgetItems.push({id:Date.now(),desc,amount,cat,memberId,date:new Date().toISOString().slice(0,10)});
-  saveBudget();
-  document.querySelector('div[style*="inset:0"]')?.remove();
-  renderBudget();
-  showToast('💶 Dépense ajoutée !');
-}
-
-function renderBudget(){
-  const statsEl = document.getElementById('budgetStats');
-  const listEl  = document.getElementById('budgetList');
-  if(!statsEl||!listEl) return;
-  const total = _budgetItems.reduce((s,i)=>s+i.amount, 0);
-  const thisMonth = new Date().toISOString().slice(0,7);
-  const monthItems = _budgetItems.filter(i=>i.date.startsWith(thisMonth));
-  const monthTotal = monthItems.reduce((s,i)=>s+i.amount, 0);
-  const monthCount = monthItems.length;
-
-  statsEl.innerHTML =
-    '<div style="background:linear-gradient(135deg,#f97316,#fb923c);border-radius:16px;padding:12px;color:white;text-align:center;">'
-    +'<div style="font-size:11px;font-weight:700;opacity:.8;">TOTAL</div>'
-    +'<div style="font-size:22px;font-weight:900;font-family:\'Baloo 2\',sans-serif;">'+total.toFixed(0)+'€</div></div>'
-    +'<div style="background:linear-gradient(135deg,#fbbf24,#f59e0b);border-radius:16px;padding:12px;color:white;text-align:center;">'
-    +'<div style="font-size:11px;font-weight:700;opacity:.8;">CE MOIS</div>'
-    +'<div style="font-size:22px;font-weight:900;font-family:\'Baloo 2\',sans-serif;">'+monthTotal.toFixed(0)+'€</div></div>'
-    +'<div style="background:linear-gradient(135deg,#a78bfa,#818cf8);border-radius:16px;padding:12px;color:white;text-align:center;">'
-    +'<div style="font-size:11px;font-weight:700;opacity:.8;">DÉPENSES / MOIS</div>'
-    +'<div style="font-size:22px;font-weight:900;font-family:\'Baloo 2\',sans-serif;">'+monthCount+'</div></div>';
-
-  if(!_budgetItems.length){
-    listEl.innerHTML='<div style="text-align:center;color:rgba(45,43,85,.3);padding:20px;font-size:13px;">Aucune dépense 💸</div>';
-    return;
-  }
-  listEl.innerHTML = [..._budgetItems].reverse().slice(0,20).map(function(item){
-    const cat = BUDGET_CATS.find(c=>c.key===item.cat)||BUDGET_CATS[5];
-    const member = S.members.find(m=>m.id===item.memberId);
-    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:rgba(249,115,22,.06);border-radius:12px;">'
-      +'<div style="width:36px;height:36px;border-radius:50%;background:'+cat.color+';display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">'+cat.emoji+'</div>'
-      +'<div style="flex:1;"><div style="font-weight:700;font-size:13px;">'+item.desc+'</div>'
-      +'<div style="font-size:11px;color:rgba(45,43,85,.4);">'+item.date+(member?' · '+member.name:'')+'</div></div>'
-      +'<div style="font-weight:900;font-size:15px;color:#f97316;">'+item.amount.toFixed(2)+'€</div>'
-      +'<button onclick="deleteBudgetItem('+item.id+')" style="background:none;border:none;cursor:pointer;font-size:14px;opacity:.4;">🗑️</button>'
-      +'</div>';
-  }).join('');
-}
-
-function deleteBudgetItem(id){
-  _budgetItems = _budgetItems.filter(i=>i.id!==id);
-  saveBudget(); renderBudget();
-  showToast('🗑️ Dépense supprimée');
-}
-
-// ── LISTE DE COURSES ──────────────────────────────
-function renderShop(){
-  const items = S.shopItems || [];
-  const total = items.length;
-  const done  = items.filter(i=>i.done).length;
-  const pct   = total ? Math.round(done/total*100) : 0;
-
-  document.getElementById('shopProgressBar').style.width = pct + '%';
-  document.getElementById('shopStats').textContent = total
-    ? `${done} / ${total} articles achetés · ${pct}% fait !`
-    : 'La liste est vide 🎉';
-  document.getElementById('shopDoneCount').textContent = total ? `${done}/${total}` : '';
-
-  // Badge
-  const remaining = total - done;
-  const badge = document.getElementById('shopBadge');
-  if(remaining > 0){ badge.textContent = remaining; badge.style.display = ''; }
-  else { badge.style.display = 'none'; }
-
-  if(!total){
-    document.getElementById('shopItems').innerHTML = '<div class="shop-empty">🛒 La liste est vide !<br><small>Ajoutez vos articles ci-dessus</small></div>';
-    return;
-  }
-
-  // Group by category
-  const grouped = {};
-  items.forEach(item => {
-    const cat = item.emoji || '🛒';
-    if(!grouped[cat]) grouped[cat] = [];
-    grouped[cat].push(item);
-  });
-
-  let html = '';
-  Object.entries(grouped).forEach(([cat, catItems]) => {
-    html += `<div style="font-size:11px;font-weight:800;color:rgba(45,43,85,.35);letter-spacing:1px;text-transform:uppercase;padding:8px 4px 4px;">${cat} ${catItems[0]?.category||''}</div>`;
-    catItems.forEach(item => {
-      const member = S.members.find(m=>m.id===item.member_id);
-      const time = item.created_at ? new Date(parseInt(item.created_at)).toLocaleDateString('fr-FR',{day:'numeric',month:'short'}) : '';
-      html += `<div class="shop-item${item.done?' done':''}" onclick="toggleShopItem(${item.id})">
-        <div class="shop-check">${item.done?'✓':''}</div>
-        <div class="shop-item-emoji">${item.emoji||'🛒'}</div>
-        <div class="shop-item-info">
-          <div class="shop-item-name">${item.name}</div>
-          <div class="shop-item-meta">${member?'Ajouté par '+member.name:''}${item.done?' · ✅ Acheté':''}</div>
-        </div>
-        ${member?`<div class="shop-item-av" style="background:${member.color}">${member.name[0]}</div>`:''}
-        <button class="shop-del" onclick="event.stopPropagation();deleteShopItem(${item.id})">🗑️</button>
-      </div>`;
-    });
-  });
-  document.getElementById('shopItems').innerHTML = html;
-}
 
 async function addShopItem(){
   const input = document.getElementById('shopInput');
