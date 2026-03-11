@@ -710,7 +710,7 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
           <div class="dw-week-strip" id="dwWeekStrip"></div>
         </div>
         <div class="dw-body">
-          <div id="weatherWidget" style="display:flex;align-items:center;gap:10px;padding:8px 12px;margin-bottom:8px;background:rgba(255,255,255,.15);border-radius:14px;font-family:'Caveat',cursive;font-size:15px;color:rgba(255,255,255,.9);"></div>
+          <div id="weatherWidget" style="display:flex;align-items:center;gap:14px;padding:12px 16px;margin-bottom:10px;background:rgba(255,255,255,.18);border-radius:18px;backdrop-filter:blur(4px);"></div>
           <div class="fun-msg-bar" id="funMsgBar"></div>
           <div class="dw-section-title">📅 Activités du jour</div>
           <div class="dw-events" id="dwEvents"></div>
@@ -995,26 +995,49 @@ function toggleDark(){
 async function fetchWeather(){
   const el = document.getElementById('weatherWidget');
   if(!el) return;
+  el.innerHTML='<span style="font-size:20px;opacity:.6;">⏳</span><span style="font-size:12px;color:rgba(255,255,255,.6);font-weight:600;">Chargement météo…</span>';
   try {
-    const pos = await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{timeout:5000}));
+    const pos = await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{timeout:8000}));
     const {latitude:lat, longitude:lon} = pos.coords;
-    const resp = await fetch('https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current_weather=true&timezone=auto');
+    const resp = await fetch('https://api.open-meteo.com/v1/forecast?latitude='+lat+'&longitude='+lon+'&current_weather=true&hourly=apparent_temperature,precipitation_probability&timezone=auto&forecast_days=1');
     const data = await resp.json();
     const w = data.current_weather;
     const temp = Math.round(w.temperature);
+    const wind = Math.round(w.windspeed);
     const code = w.weathercode;
-    let emoji='☀️', desc='Ensoleillé';
-    if(code===0){emoji='☀️';desc='Ensoleillé';}
-    else if(code<=2){emoji='⛅';desc='Nuageux';}
-    else if(code<=3){emoji='☁️';desc='Couvert';}
-    else if(code<=49){emoji='🌫️';desc='Brumeux';}
-    else if(code<=69){emoji='🌧️';desc='Pluie';}
-    else if(code<=79){emoji='❄️';desc='Neige';}
-    else if(code<=82){emoji='🌧️';desc='Averses';}
-    else{emoji='⛈️';desc='Orage';}
-    el.innerHTML='<span style="font-size:26px;">'+emoji+'</span><div><div style="font-size:17px;font-weight:800;">'+temp+'°C</div><div style="font-size:11px;opacity:.8;">'+desc+'</div></div>';
+    // Feels like: find closest hour
+    const hour = new Date().getHours();
+    const feelsLike = data.hourly?.apparent_temperature ? Math.round(data.hourly.apparent_temperature[hour]) : null;
+    const rainProb = data.hourly?.precipitation_probability ? data.hourly.precipitation_probability[hour] : null;
+    let emoji='☀️', desc='Ensoleillé', advice='Profitez du soleil !';
+    if(code===0){emoji='☀️';desc='Ensoleillé';advice='Belle journée !';}
+    else if(code<=2){emoji='⛅';desc='Partiellement nuageux';advice='Quelques nuages.';}
+    else if(code<=3){emoji='☁️';desc='Couvert';advice='Ciel gris aujourd\'hui.';}
+    else if(code<=49){emoji='🌫️';desc='Brume / brouillard';advice='Visibilité réduite.';}
+    else if(code<=59){emoji='🌦️';desc='Bruine';advice='Prenez un parapluie !';}
+    else if(code<=69){emoji='🌧️';desc='Pluie';advice='N\'oubliez pas le parapluie !';}
+    else if(code<=79){emoji='❄️';desc='Neige';advice='Couvrez-vous bien !';}
+    else if(code<=82){emoji='🌧️';desc='Averses';advice='Risque de pluie !';}
+    else if(code<=84){emoji='🌨️';desc='Averses de neige';advice='Routes glissantes !';}
+    else{emoji='⛈️';desc='Orage';advice='Restez à l\'abri !';}
+    el.innerHTML=
+      '<div style="font-size:42px;line-height:1;">'+emoji+'</div>'
+      +'<div style="flex:1;">'
+        +'<div style="display:flex;align-items:baseline;gap:6px;">'
+          +'<span style="font-family:\'Baloo 2\',sans-serif;font-size:32px;font-weight:800;color:white;line-height:1;">'+temp+'°C</span>'
+          +(feelsLike!==null?'<span style="font-size:12px;color:rgba(255,255,255,.6);font-weight:600;">ressentis '+feelsLike+'°</span>':'')
+        +'</div>'
+        +'<div style="font-size:14px;font-weight:700;color:rgba(255,255,255,.9);margin:2px 0;">'+desc+'</div>'
+        +'<div style="font-size:11px;color:rgba(255,255,255,.65);display:flex;gap:10px;flex-wrap:wrap;margin-top:3px;">'
+          +'<span>💨 '+wind+' km/h</span>'
+          +(rainProb!==null?'<span>🌂 '+rainProb+'% pluie</span>':'')
+          +'<span style="color:rgba(255,255,255,.8);font-style:italic;">'+advice+'</span>'
+        +'</div>'
+      +'</div>';
   } catch(e){
-    el.innerHTML='<span style="font-size:13px;opacity:.5;">🌡️ Météo non disponible</span>';
+    el.innerHTML='<span style="font-size:22px;">📍</span>'
+      +'<div style="font-size:12px;color:rgba(255,255,255,.7);font-weight:600;">Météo indisponible<br>'
+      +'<span style="font-size:10px;opacity:.7;">Autorise la géolocalisation</span></div>';
   }
 }
 
@@ -1206,8 +1229,25 @@ function shiftWeek(dir){
 function renderAll(){
   renderSidebar();renderCalendar();renderEvents();renderChat();renderProjects();renderShop();renderBudget();
   renderCatGrid();renderMembersPicker('membersPicker');renderQuickbar();renderWidget();
-  document.getElementById('statTotal').textContent=S.events.length;
-  document.getElementById('agendaBadge').textContent=S.events.filter(e=>e.date>=new Date().toISOString().slice(0,10)).length;
+  // Stats
+  const today = new Date();
+  const ym = today.getFullYear()+'-'+(String(today.getMonth()+1).padStart(2,'0'));
+  const evMonth = S.events.filter(e=>e.date && e.date.startsWith(ym));
+  // Cette semaine
+  const weekStart = new Date(today); const dow = weekStart.getDay(); weekStart.setDate(today.getDate()-(dow===0?6:dow-1)); weekStart.setHours(0,0,0,0);
+  const weekEnd = new Date(weekStart); weekEnd.setDate(weekStart.getDate()+6); weekEnd.setHours(23,59,59,999);
+  const evWeek = S.events.filter(e=>{ if(!e.date) return false; const d=new Date(e.date+'T00:00:00'); return d>=weekStart&&d<=weekEnd; });
+  // Conflits (même jour, même membre)
+  const byDay={};
+  S.events.forEach(e=>{ if(!e.date||!e.memberIds||!e.memberIds.length) return; (byDay[e.date]=byDay[e.date]||[]).push(e); });
+  let conflicts=0;
+  Object.values(byDay).forEach(evs=>{ if(evs.length>1){ const members=new Set(evs.flatMap(e=>e.memberIds||[])); members.forEach(m=>{ if(evs.filter(e=>(e.memberIds||[]).includes(m)).length>1) conflicts++; }); }});
+  // Render
+  const st = document.getElementById('statTotal'); if(st){ st.textContent=evMonth.length; st.closest('.stat-card').querySelector('.stat-sub').textContent=evMonth.length===1?'événement 🎉':'événements 🎉'; }
+  const sw = document.getElementById('statWeek'); if(sw){ sw.textContent=evWeek.length; sw.closest('.stat-card').querySelector('.stat-sub').textContent=evWeek.length>0?evWeek.length+' cette semaine':'Rien de prévu'; }
+  const sp = document.querySelectorAll('.stat-value')[2]; if(sp){ sp.textContent=S.projects.length; sp.closest('.stat-card').querySelector('.stat-sub').textContent=S.projects.length>0?'en cours 🚀':'À créer !'; }
+  const sc = document.querySelectorAll('.stat-value')[3]; if(sc){ sc.textContent=conflicts; sc.closest('.stat-card').querySelector('.stat-sub').textContent=conflicts===0?'Tout va bien 😊':conflicts+' à vérifier ⚠️'; }
+  document.getElementById('agendaBadge').textContent=S.events.filter(e=>e.date>=today.toISOString().slice(0,10)).length;
 }
 
 // Realtime subscriptions
@@ -1769,9 +1809,8 @@ async function saveEvent(){
   document.getElementById('recurrencePreview').textContent='';
   document.getElementById('multiDayPreview').textContent='';
   setDayMode('single');
-  S.memberIds=[];closeModal('eventModal');renderCalendar();renderEvents();
-  document.getElementById('statTotal').textContent=S.events.length;
-  document.getElementById('agendaBadge').textContent=S.events.filter(e=>e.date>=new Date().toISOString().slice(0,10)).length;
+  S.memberIds=[];closeModal('eventModal');
+  await dbLoad();
 }
 
 async function saveMember(){
