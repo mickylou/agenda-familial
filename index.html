@@ -1371,6 +1371,21 @@ const CATS=[
 ];
 const MONTHS=['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 
+
+// ── CONSTANTES MANQUANTES ────────────────────────
+const REACT_EMOJIS = ['❤️','😂','👍','😮','😢','🔥'];
+let _reactions = JSON.parse(localStorage.getItem('familysync_reactions')||'{}');
+function saveReactions(){ localStorage.setItem('familysync_reactions', JSON.stringify(_reactions)); }
+function toggleReaction(msgId, emoji){
+  emoji = decodeURIComponent(String(emoji));
+  const me = getMe(); if(!me) return;
+  const key = msgId+'_'+emoji;
+  if(!_reactions[key]) _reactions[key]=[];
+  const idx = _reactions[key].indexOf(me.id);
+  if(idx>=0) _reactions[key].splice(idx,1); else _reactions[key].push(me.id);
+  saveReactions(); renderChat(); renderChat2();
+}
+
 let S={
   members:[],
   events:[],
@@ -1596,7 +1611,6 @@ function detectConflicts(){
   return c;
 }
 
-let _chatMemberId = null;
 
 function renderChatWho(){
   if(!S.members.length) return;
@@ -1616,93 +1630,27 @@ function setChatMember(id){ _chatMemberId = id; renderChatWho(); }
 function renderChat(){
   if(!_chatMemberId && S.members.length) _chatMemberId = S.members[0].id;
   renderChatWho();
-  const meForChat=getMe();
-  document.getElementById('chatMessages').innerHTML=S.chats.map(function(msg){
-    const m=S.members.find(function(x){return x.id===msg.memberId;}); if(!m) return'';
-    const own=meForChat&&msg.memberId===meForChat.id;
-    const t=new Date(msg.ts).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
-    // Reactions
-    const reactionCounts={};
-    REACT_EMOJIS.forEach(function(emoji){
-      const key=msg.id+'_'+emoji;
-      if(_reactions[key]&&_reactions[key].length>0) reactionCounts[emoji]=_reactions[key].length;
-    });
-    const reactBtns=Object.entries(reactionCounts).map(function(entry){
-      const emoji=entry[0],count=entry[1];
-      const key=msg.id+'_'+emoji;
-      const meReacted=meForChat&&_reactions[key]&&_reactions[key].includes(meForChat.id);
-      const activeClass = meReacted?' active':'';
-      return '<button class="chat-reaction-btn'+activeClass+'" onclick="toggleReaction(\''+msg.id+'\',\''+emoji+'\')">'+emoji+' '+count+'</button>';
-    }).join('');
-    const pickerBtns=REACT_EMOJIS.map(function(emoji){
-      return '<button class="chat-reaction-pick-btn" onclick="toggleReaction(\''+msg.id+'\',\''+emoji+'\')">'+emoji+'</button>';
-    }).join('');
-    // Content (image or text)
-    const isImg=msg.text&&msg.text.startsWith('[IMG]');
-    const bubbleContent=isImg?'<img src="'+msg.text.slice(5)+'" class="chat-photo-msg" onclick="window.open(this.src)">':msg.text;
-    return'<div class="chat-msg '+(own?'own':'')+'" style="flex-direction:'+(own?'row-reverse':'row')+'">'
-      +'<div class="chat-av" style="background:'+m.color+'">'+(m.photo?'<img src="'+m.photo+'">':m.name[0])+'</div>'
-      +'<div style="max-width:76%;">'
-      +(!own?'<div class="chat-who">'+m.name+' · '+t+'</div>':'')
-      +'<div class="chat-bubble">'+bubbleContent+'</div>'
-      +(own?'<div class="chat-who" style="text-align:right;margin-top:3px;">'+t+'</div>':'')
-      +(reactBtns?'<div class="chat-reactions">'+reactBtns+'</div>':'')
-      +'<div class="chat-reaction-picker">'+pickerBtns+'</div>'
-      +'</div></div>';
-  }).join('');
-  const c=document.getElementById('chatMessages'); c.scrollTop=c.scrollHeight;
-}
-
-function renderChat2(){
-  var row2 = document.getElementById('chatWhoRow2');
-  if(!row2) return;
-  if(!_chatMemberId && S.members.length) _chatMemberId = S.members[0].id;
-  row2.innerHTML = '<span style="font-size:11px;font-weight:700;color:rgba(45,43,85,.4);align-self:center;">Qui écrit ? </span>' +
-    S.members.map(function(m){
-      var sel = m.id===_chatMemberId;
-      var av = m.photo ? '<img src="'+m.photo+'" style="width:22px;height:22px;border-radius:50%;object-fit:cover;">'  : '<span style="font-size:12px;font-weight:800;color:white;">'+m.name[0]+'</span>';
-      return '<button onclick="setChatMember('+m.id+');renderChat();renderChat2();" style="display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;border:2px solid '+(sel?m.color:'rgba(45,43,85,.15)')+';background:'+(sel?m.color+'22':'transparent')+';cursor:pointer;font-size:12px;font-weight:700;font-family:Nunito,sans-serif;color:'+(sel?m.color:'rgba(45,43,85,.5)')+';">'
-        +'<div style="width:22px;height:22px;border-radius:50%;background:'+m.color+';display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">'+av+'</div>'
-        +m.name+'</button>';
-    }).join('');
-
   var meForChat = getMe();
-  var msgs2 = document.getElementById('chatMessages2');
-  if(!msgs2) return;
-  msgs2.innerHTML = S.chats.map(function(msg){
+  var el = document.getElementById('chatMessages');
+  if(!el) return;
+  el.innerHTML = S.chats.map(function(msg){
     var m = S.members.find(function(x){ return x.id===msg.memberId; });
     if(!m) return '';
     var own = meForChat && msg.memberId===meForChat.id;
     var t = new Date(msg.ts).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
     var isImg = msg.text && msg.text.startsWith('[IMG]');
-    var bubbleContent = isImg ? '<img src="'+msg.text.slice(5)+'" style="max-width:200px;border-radius:12px;" onclick="window.open(this.src)">' : msg.text;
-    var av2 = m.photo ? '<img src="'+m.photo+'" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">' : m.name[0];
+    var bubbleContent = isImg ? '<img src="'+msg.text.slice(5)+'" style="max-width:180px;border-radius:10px;" onclick="window.open(this.src)">' : (msg.text||'');
+    var av = m.photo ? '<img src="'+m.photo+'" style="width:100%;height:100%;object-fit:cover;">' : m.name[0];
     return '<div style="display:flex;flex-direction:'+(own?'row-reverse':'row')+';gap:8px;margin-bottom:10px;align-items:flex-end;">'
-      +'<div style="width:34px;height:34px;border-radius:50%;background:'+m.color+';display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:white;flex-shrink:0;overflow:hidden;">'+av2+'</div>'
-      +'<div style="max-width:70%;">'
-      +(!own?'<div style="font-size:11px;font-weight:700;color:rgba(45,43,85,.4);margin-bottom:3px;">'+m.name+' · '+t+'</div>':'')
-      +'<div style="background:'+(own?'linear-gradient(135deg,#FF6B6B,#FFA07A)':'rgba(45,43,85,.07)')+';color:'+(own?'white':'var(--dark)')+';border-radius:'+(own?'18px 18px 4px 18px':'18px 18px 18px 4px')+';padding:9px 14px;font-size:14px;font-weight:600;line-height:1.5;">'+bubbleContent+'</div>'
-      +(own?'<div style="font-size:11px;color:rgba(45,43,85,.4);text-align:right;margin-top:3px;">'+t+'</div>':'')
+      +'<div style="width:32px;height:32px;border-radius:50%;background:'+m.color+';display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:800;color:white;flex-shrink:0;overflow:hidden;">'+av+'</div>'
+      +'<div style="max-width:72%;">'
+        +(!own?'<div style="font-size:11px;font-weight:700;color:rgba(45,43,85,.4);margin-bottom:3px;">'+m.name+' · '+t+'</div>':'')
+        +'<div style="background:'+(own?'linear-gradient(135deg,#FF6B6B,#FFA07A)':'rgba(45,43,85,.07)')+';color:'+(own?'white':'var(--dark)')+';border-radius:'+(own?'18px 18px 4px 18px':'18px 18px 18px 4px')+';padding:9px 14px;font-size:13px;font-weight:600;line-height:1.5;word-break:break-word;">'+bubbleContent+'</div>'
+        +(own?'<div style="font-size:11px;color:rgba(45,43,85,.4);text-align:right;margin-top:2px;">'+t+'</div>':'')
       +'</div></div>';
   }).join('');
-  msgs2.scrollTop = msgs2.scrollHeight;
+  el.scrollTop = el.scrollHeight;
 }
-
-async function sendChat2(){
-  var inp = document.getElementById('chatInput2');
-  if(!inp) return;
-  var t = inp.value.trim();
-  if(!t) return;
-  if(!S.members.length){ showToast("⚠️ Ajoute d'abord un membre !"); return; }
-  var chatMe = getMe();
-  if(!chatMe){ showToast("⚠️ Sélectionne ton profil !"); return; }
-  inp.value='';
-  var res = await sb.from('chats').insert({member_id:chatMe.id, text:t, ts:Date.now()});
-  if(res.error){ showToast('⚠️ Erreur envoi'); console.error(res.error); return; }
-  await dbLoad();
-}
-
-
 async function sendChat(){
   const i=document.getElementById('chatInput'), t=i.value.trim(); if(!t) return;
   if(!S.members.length){showToast("⚠️ Ajoute d'abord un membre !");return;}
@@ -2396,8 +2344,6 @@ const HOROSCOPE_TEXTS = {
   ],
 };
 
-let _horoscopeRendered = false;
-let _horoscopeDay = '';
 
 function renderHoroscope(){
   const today = new Date().toISOString().slice(0,10);
