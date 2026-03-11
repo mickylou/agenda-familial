@@ -1123,21 +1123,26 @@ function closeTopModal(){
   if(el) el.remove();
 }
 async function dbLoad(){
-  try {
-    const [mem,evt,prj,cht,shp] = await Promise.all([
-      sb.from('members').select('*').order('id'),
-      sb.from('events').select('*').order('id'),
-      sb.from('projects').select('*').order('id'),
-      sb.from('chats').select('*').order('ts'),
-      sb.from('shopping').select('*').order('created_at'),
-    ]);
-    S.members   = (mem.data||[]).map(r=>({id:r.id,name:r.name,role:r.role,color:r.color,photo:r.photo,birthday:r.birthday}));
-    S.events    = (evt.data||[]).map(r=>({id:r.id,title:r.title,date:r.date,dateEnd:r.date_end,time:r.time,timeEnd:r.time_end,cat:r.cat,memberIds:r.member_ids||[],location:r.location,note:r.note,recurrence:r.recurrence,recurGroupId:r.recur_group_id}));
-    S.projects  = (prj.data||[]).map(r=>({id:r.id,name:r.name,emoji:r.emoji,desc:r.description,date:r.date,budget:r.budget,progress:r.progress||0,memberIds:r.member_ids||[]}));
-    S.chats     = (cht.data||[]).map(r=>({id:r.id,memberId:r.member_id,text:r.text,ts:r.ts}));
-    S.shopItems = (shp.data||[]).map(r=>({id:r.id,name:r.name,emoji:r.emoji,category:r.category,done:r.done,memberId:r.member_id,createdAt:r.created_at}));
-    renderAll();
-  } catch(e){ showToast('⚠️ Erreur de chargement'); console.error(e); }
+  // Chaque table est chargée indépendamment — une erreur sur une table n'arrête pas les autres
+  async function safeLoad(table, order){ try { const r=await sb.from(table).select('*').order(order); return r; } catch(e){ console.warn(table+' load failed:', e); return {data:null,error:e}; } }
+  const [mem,evt,prj,cht,shp] = await Promise.all([
+    safeLoad('members','id'),
+    safeLoad('events','id'),
+    safeLoad('projects','id'),
+    safeLoad('chats','ts'),
+    safeLoad('shopping','created_at'),
+  ]);
+  // Log erreurs sans bloquer
+  [['members',mem],['events',evt],['projects',prj],['chats',cht],['shopping',shp]].forEach(function(pair){
+    if(pair[1].error) console.warn(pair[0]+' error:', pair[1].error.message||pair[1].error);
+  });
+  // Mettre à jour seulement si données reçues
+  if(mem.data) S.members   = mem.data.map(function(r){ return {id:r.id,name:r.name,role:r.role,color:r.color,photo:r.photo,birthday:r.birthday}; });
+  if(evt.data) S.events    = evt.data.map(function(r){ return {id:r.id,title:r.title,date:r.date,dateEnd:r.date_end,time:r.time,timeEnd:r.time_end,cat:r.cat,memberIds:r.member_ids||[],location:r.location,note:r.note,recurrence:r.recurrence,recurGroupId:r.recur_group_id}; });
+  if(prj.data) S.projects  = prj.data.map(function(r){ return {id:r.id,name:r.name,emoji:r.emoji,desc:r.description,date:r.date,budget:r.budget,progress:r.progress||0,memberIds:r.member_ids||[]}; });
+  if(cht.data) S.chats     = cht.data.map(function(r){ return {id:r.id,memberId:r.member_id,text:r.text,ts:r.ts}; });
+  if(shp.data) S.shopItems = shp.data.map(function(r){ return {id:r.id,name:r.name,emoji:r.emoji,category:r.category,done:r.done,memberId:r.member_id,createdAt:r.created_at}; });
+  renderAll();
 }
 
 // ── WIDGET DU JOUR ───────────────────────────────
@@ -1383,7 +1388,6 @@ async function init(){
   applyDarkAuto();
   renderCatGrid();renderMembersPicker('membersPicker');renderProjTypes();renderColorPicker();
   renderQuickbar();
-  showToast('🔄 Connexion à la base de données…');
   await dbLoad();
   setupRealtime();
   fetchWeather();
