@@ -728,6 +728,7 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
     </div>
 
 
+    <div data-section id="sectionCal">
     <div class="stats-row">
       <div class="stat-card" data-emoji="📅"><div class="stat-label">Ce mois-ci</div><div class="stat-value" id="statTotal">0</div><div class="stat-sub">événements 🎉</div></div>
       <div class="stat-card" data-emoji="⚡"><div class="stat-label">Cette semaine</div><div class="stat-value" id="statWeek">0</div><div class="stat-sub">Rien de prévu</div></div>
@@ -752,7 +753,7 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
           <div class="dw-week-strip" id="dwWeekStrip"></div>
         </div>
         <div class="dw-body">
-          <div id="weatherWidget" style="display:flex;align-items:center;gap:14px;padding:12px 16px;margin-bottom:10px;background:rgba(255,255,255,.18);border-radius:18px;backdrop-filter:blur(4px);"></div>
+          <div id="weatherWidget" style="display:flex;align-items:center;gap:14px;padding:12px 16px;margin-bottom:10px;background:linear-gradient(135deg,#3D2B1F,#5a3d2b);border-radius:18px;box-shadow:0 2px 12px rgba(0,0,0,.2);"></div>
           <div class="fun-msg-bar" id="funMsgBar"></div>
           <div class="dw-section-title">📅 Activités du jour</div>
           <div class="dw-events" id="dwEvents"></div>
@@ -807,7 +808,9 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
       </div>
     </div>
 
-    <!-- LISTE DE COURSES -->
+    </div><!-- /sectionCal -->
+
+    <div data-section id="sectionShop" style="display:none;">
     <div class="shop-panel" id="shopPanel">
       <div class="shop-header">
         <div class="shop-title">🛒 Liste de courses</div>
@@ -834,6 +837,9 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
       <div class="shop-items" id="shopItems"></div>
     </div>
 
+    </div><!-- /sectionShop -->
+
+    <div data-section id="sectionProjects" style="display:none;">
     <div class="project-panel">
       <div class="project-header">
         <div class="panel-title" style="color:var(--m);">🎯 Projets & Sorties familiales</div>
@@ -841,6 +847,7 @@ body::after{width:500px;height:500px;background:radial-gradient(circle,#4ECDC430
       </div>
       <div class="project-list" id="projectList"></div>
     </div>
+    </div><!-- /sectionProjects -->
   </main>
 </div>
 
@@ -1097,7 +1104,6 @@ async function dbLoad(){
     S.chats     = (cht.data||[]).map(r=>({id:r.id,memberId:r.member_id,text:r.text,ts:r.ts}));
     S.shopItems = (shp.data||[]).map(r=>({id:r.id,name:r.name,emoji:r.emoji,category:r.category,done:r.done,memberId:r.member_id,createdAt:r.created_at}));
     renderAll();
-    showToast('🔄 Données synchronisées !');
   } catch(e){ showToast('⚠️ Erreur de chargement'); console.error(e); }
 }
 
@@ -1918,6 +1924,50 @@ async function clearDoneItems(){
   if(!doneIds.length){ showToast('Rien à effacer !'); return; }
   await sb.from('shopping').delete().in('id', doneIds);
   showToast('🧹 Articles achetés supprimés !');
+  await dbLoad();
+}
+
+function renderShop(){
+  const items = S.shopItems || [];
+  const el = document.getElementById('shopItems');
+  const statsEl = document.getElementById('shopStats');
+  const progressBar = document.getElementById('shopProgressBar');
+  const doneCount = document.getElementById('shopDoneCount');
+  if(!el) return;
+
+  const done = items.filter(i=>i.done).length;
+  const total = items.length;
+  const pct = total ? Math.round(done/total*100) : 0;
+
+  if(progressBar) progressBar.style.width = pct+'%';
+  if(doneCount) doneCount.textContent = total ? done+'/'+total+' achetés' : '';
+  if(statsEl) statsEl.innerHTML = total
+    ? '<span style="font-weight:700;font-size:13px;color:var(--grape);">'+pct+'% fait</span>'
+      +(done>0?'<button onclick="clearDoneItems()" style="font-size:11px;background:none;border:1px solid rgba(45,43,85,.2);border-radius:8px;padding:3px 8px;cursor:pointer;color:rgba(45,43,85,.5);font-weight:700;">🧹 Effacer achetés</button>':'')
+    : '';
+
+  if(!items.length){
+    el.innerHTML='<div class="shop-empty">🛒 La liste est vide !<br><small>Ajoutez vos articles ci-dessus</small></div>';
+    return;
+  }
+
+  // Group by category
+  const groups = {};
+  items.forEach(i=>{ const k=i.emoji||'🛒'; if(!groups[k]) groups[k]=[]; groups[k].push(i); });
+
+  el.innerHTML = Object.entries(groups).map(([emoji, gitems])=>
+    '<div style="margin-bottom:10px;">'
+    +'<div style="font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:rgba(45,43,85,.4);padding:4px 0 6px;">'+emoji+' '+gitems[0].category+'</div>'
+    +gitems.map(item=>
+      '<div class="shop-item'+(item.done?' done':'')+'" style="display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:12px;background:'+(item.done?'rgba(130,224,168,.15)':'rgba(45,43,85,.04)')+';margin-bottom:4px;cursor:pointer;" onclick="toggleShopItem('+item.id+')">'
+      +'<div style="width:22px;height:22px;border-radius:50%;border:2px solid '+(item.done?'#4ECDC4':'rgba(45,43,85,.2)')+';background:'+(item.done?'#4ECDC4':'transparent')+';display:flex;align-items:center;justify-content:center;flex-shrink:0;">'
+      +(item.done?'<span style="color:white;font-size:13px;">✓</span>':'')+'</div>'
+      +'<span style="flex:1;font-size:14px;font-weight:600;'+(item.done?'text-decoration:line-through;opacity:.5;':'')+'">'+item.name+'</span>'
+      +'<button onclick="event.stopPropagation();deleteShopItem('+item.id+')" style="width:26px;height:26px;border-radius:50%;border:none;background:rgba(239,68,68,.1);color:#ef4444;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;">×</button>'
+      +'</div>'
+    ).join('')
+    +'</div>'
+  ).join('');
 }
 
 // ── EVENT EDIT ───────────────────────────────────
@@ -1973,7 +2023,26 @@ async function deleteEvent(){
   showToast('🗑️ Événement supprimé !');
 }
 
-function setNav(el){document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));el.classList.add('active');}
+function setNav(el){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
+  const label = el.textContent.trim().replace(/[0-9]/g,'').trim();
+  const sections = document.querySelectorAll('[data-section]');
+  sections.forEach(s=>s.style.display='none');
+  let targetId = 'sectionCal';
+  if(label.includes('Cours'))     targetId='sectionShop';
+  else if(label.includes('Projet')) targetId='sectionProjects';
+  else if(label.includes('Discuss')){ targetId='sectionCal'; setTimeout(()=>{ const c=document.querySelector('.chat-panel'); if(c) c.scrollIntoView({behavior:'smooth'}); },100); }
+  else if(label.includes('Alerte')){ targetId='sectionCal'; setTimeout(()=>{ const a=document.querySelector('.alerts-section'); if(a) a.scrollIntoView({behavior:'smooth'}); },100); }
+  else targetId='sectionCal';
+  const target = document.getElementById(targetId);
+  if(target) target.style.display='';
+  // Update page title
+  const titles = {'Courses':'🛒 Liste de courses','Projets':'🎯 Projets & Sorties','Discussion':'💬 Discussion famille','Calendrier':'📅 Calendrier familial','Agenda':'📋 Agenda'};
+  const titleKey = Object.keys(titles).find(k=>label.includes(k));
+  const pt = document.querySelector('.page-title');
+  if(pt && titleKey) pt.textContent = titles[titleKey];
+}
 
 let _filterMemberId = null;
 function filterMember(id){
