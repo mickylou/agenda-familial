@@ -198,22 +198,42 @@ body.dark .topbar,body.dark .quickbar{background:#1e1b30;}
 /* CONFETTI */
 .confetti-piece{position:fixed;width:8px;height:8px;border-radius:2px;pointer-events:none;z-index:9998;}
 
-/* RESPONSIVE */
+/* RESPONSIVE MOBILE */
 @media(max-width:900px){
-  .app{grid-template-columns:1fr;grid-template-rows:56px 56px 1fr;}
-  .sidebar{display:none;}
-  .topbar{grid-column:1;grid-row:1;}
-  .quickbar{grid-column:1;grid-row:2;overflow-x:auto;}
-  .main{grid-column:1;grid-row:3;padding:12px;}
+  .app{display:flex;flex-direction:column;min-height:100vh;}
+  .sidebar{display:none;position:fixed;inset:0;z-index:500;padding:70px 16px 20px;overflow-y:auto;}
+  .sidebar.open{display:flex;}
+  .topbar{position:sticky;top:0;z-index:100;width:100%;flex-shrink:0;}
+  .quickbar{width:100%;overflow-x:auto;flex-shrink:0;}
+  .main{flex:1;padding:12px;width:100%;}
   .stats-row{grid-template-columns:repeat(2,1fr);}
   .widget-wrap{grid-template-columns:1fr;}
   .upcoming-section{grid-template-columns:1fr;}
+  .view-sw{display:none!important;}
+  .hamburger{display:flex!important;}
+  .ham-close{display:flex!important;}
+  .page-title{font-size:15px;}
 }
 @media(max-width:600px){
   .stats-row{grid-template-columns:repeat(2,1fr);gap:8px;}
-  .stat-value{font-size:26px;}
-  .modal{width:100vw;max-height:100vh;border-radius:0;}
+  .stat-card{padding:12px;}
+  .stat-value{font-size:24px;}
+  .modal{width:100vw;max-height:96vh;border-radius:20px 20px 0 0;position:fixed;bottom:0;left:0;top:auto;transform:none;}
+  .modal-overlay{align-items:flex-end;padding:0;}
   .shop-add-row{flex-direction:column;}
+  .widget-wrap{grid-template-columns:1fr;}
+  .dw-body{padding:10px 14px;}
+  .chat-messages{max-height:250px;}
+  .tbtn{font-size:12px;padding:6px 10px;}
+}
+/* Bottom nav mobile */
+.bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:2px solid rgba(45,43,85,.08);z-index:200;padding:6px 0 max(6px,env(safe-area-inset-bottom));box-shadow:0 -4px 20px rgba(45,43,85,.1);}
+.bottom-nav-item{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 4px;cursor:pointer;font-size:10px;font-weight:800;color:rgba(45,43,85,.4);flex:1;border:none;background:none;font-family:'Nunito',sans-serif;transition:color .2s;}
+.bottom-nav-item.active{color:var(--coral);}
+.bottom-nav-item span:first-child{font-size:20px;}
+@media(max-width:900px){
+  .bottom-nav{display:flex;}
+  .main{padding-bottom:80px;}
 }
 </style>
 </head>
@@ -221,7 +241,8 @@ body.dark .topbar,body.dark .quickbar{background:#1e1b30;}
 <div class="app">
 
 <!-- SIDEBAR -->
-<aside class="sidebar">
+<aside class="sidebar" id="mobileSidebar">
+  <button class="ham-close" onclick="toggleSidebar()" style="display:none;position:absolute;top:14px;right:14px;width:36px;height:36px;border-radius:50%;border:2px solid rgba(255,255,255,.2);background:none;color:white;font-size:18px;cursor:pointer;">✕</button>
   <div class="logo">
     <div class="logo-icon" onclick="confetti(20)">🏠</div>
     <div><div class="logo-text">FamilySync</div><div class="logo-sub">Agenda familial ✨</div></div>
@@ -249,6 +270,7 @@ body.dark .topbar,body.dark .quickbar{background:#1e1b30;}
 
 <!-- TOPBAR -->
 <header class="topbar">
+  <button class="hamburger" onclick="toggleSidebar()" style="display:none;width:38px;height:38px;border-radius:10px;border:2px solid rgba(45,43,85,.15);background:none;font-size:20px;cursor:pointer;flex-shrink:0;">☰</button>
   <div class="page-title" id="pageTitle">📅 Calendrier familial</div>
   <div class="view-sw" id="viewSw" style="display:flex;">
     <button class="vbtn active" onclick="setView('month',this)">Mois</button>
@@ -576,6 +598,16 @@ body.dark .topbar,body.dark .quickbar{background:#1e1b30;}
       <button class="tbtn tbtn-primary" onclick="saveProject()">💾 Enregistrer</button>
     </div>
   </div>
+</div>
+
+
+<!-- BOTTOM NAV MOBILE -->
+<div class="bottom-nav" id="bottomNav">
+  <button class="bottom-nav-item active" id="bn-cal" onclick="mobileNav(this,'cal')"><span>📅</span>Calendrier</button>
+  <button class="bottom-nav-item" id="bn-chat" onclick="mobileNav(this,'chat')"><span>💬</span>Discussion</button>
+  <button class="bottom-nav-item" id="bn-shop" onclick="mobileNav(this,'shop')"><span>🛒</span>Courses</button>
+  <button class="bottom-nav-item" id="bn-projects" onclick="mobileNav(this,'projects')"><span>🎯</span>Projets</button>
+  <button class="bottom-nav-item" id="bn-horo" onclick="mobileNav(this,'horo')"><span>⭐</span>Horoscope</button>
 </div>
 
 <!-- TOAST -->
@@ -1419,6 +1451,36 @@ function setupRealtime(){
 // ═══════════════════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════════════════
+function toggleSidebar(){
+  const sb = document.getElementById('mobileSidebar');
+  const closeBtn = sb.querySelector('.ham-close');
+  const hamBtn = document.querySelector('.hamburger');
+  sb.classList.toggle('open');
+  if(closeBtn) closeBtn.style.display = sb.classList.contains('open')?'flex':'none';
+}
+
+function mobileNav(el, section){
+  document.querySelectorAll('.bottom-nav-item').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  // Also update sidebar nav
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const titles = {cal:'📅 Calendrier familial',chat:'💬 Discussion famille',shop:'🛒 Liste de courses',projects:'🎯 Projets & Sorties',horo:'⭐ Horoscope familial'};
+  const pt = document.getElementById('pageTitle');
+  if(pt) pt.textContent = titles[section]||'';
+  const SECTIONS = {cal:'secCal',agenda:'secAgenda',chat:'secChat',shop:'secShop',projects:'secProjects',horo:'secHoro'};
+  Object.entries(SECTIONS).forEach(([k,id])=>{
+    const s=document.getElementById(id);
+    if(s) s.style.display = k===section?'':'none';
+  });
+  _currentSection = section;
+  if(section==='shop'){ renderShop(); }
+  if(section==='horo'){ renderHoro(); }
+  if(section==='chat'){ renderChatFull(); }
+  if(section==='projects'){ renderProjects(); }
+  if(section==='agenda'){ renderAgenda(); }
+  window.scrollTo(0,0);
+}
+
 async function init(){
   applyDark();
   renderJoke();
