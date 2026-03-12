@@ -350,8 +350,6 @@ body.dark .topbar,body.dark .quickbar{background:#1e1b30;}
 
   <!-- SECTION: CAL (défaut) -->
   <div id="secCal">
-      <button onclick="openSecret()" style="margin-left:auto;padding:6px 12px;border-radius:12px;border:2px solid rgba(45,43,85,.12);background:none;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;cursor:pointer;color:rgba(45,43,85,.5);" title="Envoyer un mot doux secret">💌</button>
-    </div>
 
     <!-- STATS -->
     <div class="stats-row">
@@ -521,6 +519,20 @@ body.dark .topbar,body.dark .quickbar{background:#1e1b30;}
     </div>
   </div>
 
+<!-- ═══ SECTION SOUVENIRS ═══ -->
+  <div id="secMemories" style="display:none;">
+    <div class="section-header">
+      <div class="section-title">📸 Nos Souvenirs</div>
+      <button class="tbtn tbtn-primary" onclick="openAddMemory()">＋ Ajouter</button>
+    </div>
+    <div class="memories-grid" id="memoriesGrid">
+      <div class="memory-card memory-add" onclick="openAddMemory()">
+        <div style="font-size:36px;">📸</div>
+        <div>Ajouter un souvenir</div>
+      </div>
+    </div>
+  </div>
+
 </main>
 </div>
 
@@ -660,22 +672,6 @@ body.dark .topbar,body.dark .quickbar{background:#1e1b30;}
   <button class="bottom-nav-item" id="bn-horo" onclick="mobileNav(this,'horo')"><span>⭐</span>Horoscope</button>
   <button class="bottom-nav-item" id="bn-memories" onclick="mobileNav(this,'memories')"><span>📸</span>Souvenirs</button>
 </div>
-
-
-  <!-- ═══ SECTION SOUVENIRS ═══ -->
-  <div id="secMemories" style="display:none;">
-    <div class="section-header">
-      <div class="section-title">📸 Nos Souvenirs</div>
-      <button class="tbtn tbtn-primary" onclick="openAddMemory()">＋ Ajouter</button>
-    </div>
-    <div class="memories-grid" id="memoriesGrid">
-      <div class="memory-card memory-add" onclick="openAddMemory()">
-        <div style="font-size:36px;">📸</div>
-        <div>Ajouter un souvenir</div>
-      </div>
-    </div>
-  </div>
-
   <!-- ═══ MOT DOUX MODAL ═══ -->
   <div class="modal-overlay" id="secretModal">
     <div class="modal">
@@ -751,9 +747,9 @@ const S = {
   month: new Date().getMonth(), year: new Date().getFullYear(),
   cat:'sport', memberIds:[], editEventId:null, editMemberId:null,
   color:'#FF6B6B', dayMode:'single', chatMemberId:null,
-  view:'month', weekStart:null
 };
 let _me = localStorage.getItem('fs_me') ? parseInt(localStorage.getItem('fs_me')) : null;
+let _currentSection = 'cal';
 function getMe(){ return S.members.find(m=>m.id===_me) || S.members[0] || null; }
 
 // ═══════════════════════════════════════════════════════════════
@@ -771,757 +767,679 @@ const CATS = [
 const COLORS = ['#FF6B6B','#4ECDC4','#A78BFA','#F472B6','#82E0A8','#FFB347','#60A5FA','#FFA07A'];
 const MONTHS = ['Janvier','Février','Mars','Avril','Mai','Juin','Juillet','Août','Septembre','Octobre','Novembre','Décembre'];
 const DAYS_FR = ['Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi','Dimanche'];
-
 const JOKES = [
   "Pourquoi les plongeurs plongent-ils toujours en arrière ? Parce que sinon ils tomberaient dans le bateau !",
   "Qu'est-ce qu'un crocodile qui surveille les valises ? Un gardecroco !",
   "Pourquoi l'épouvantail a-t-il reçu un prix ? Parce qu'il était exceptionnel dans son domaine !",
-  "Un homme entre dans une bibliothèque et dit : un steak frites et une bière ! Le bibliothécaire répond : Monsieur, ici c'est une bibliothèque. L'homme chuchote : un steak frites et une bière.",
+  "Un homme entre dans une bibliothèque et dit : un steak frites et une bière ! Le bibliothécaire dit tout bas : Monsieur, ici c'est une bibliothèque. L'homme chuchote : un steak frites et une bière.",
   "Qu'est-ce qu'un canif ? Un petit fien !",
-  "Pourquoi les mathématiciens confondent Halloween et Noël ? Parce que Oct 31 = Dec 25 !",
 ];
 let _jokeIdx = parseInt(localStorage.getItem('fs_joke')||'0') % JOKES.length;
-
 const FUN_MSGS = {
   5:["☕ Réveil doux… café obligatoire !","🌅 Le matin est plein de possibilités !"],
   8:["🥐 C'est l'heure du petit-déj !","😴 Encore 5 minutes… non, au boulot !"],
   12:["🍽️ Pause déj bien méritée !","🌞 Midi ! Le ventre qui gargouille ?"],
-  14:["💪 L'après-midi est là, courage !","☕ Re-café pour la journée ?"],
+  14:["💪 L'après-midi est là, courage !","☕ Re-café pour tenir ?"],
   17:["🎉 Fin de journée presque là !","🏃 En route pour les activités !"],
   20:["🌙 Bonne soirée en famille !","🍕 Soirée pizza ? 🤔"],
   22:["😴 Il est tard, dodo bientôt !","🌟 Belle nuit à tous !"],
 };
 let _funIdx = 0;
 
-// ═══════════════════════════════════════════════════════════
-// MOTEUR ASTROLOGIQUE COMPLET
-// ═══════════════════════════════════════════════════════════
-
-// ── Données des signes ──
+// ═══════════════════════════════════════════════════════════════
+// ASTROLOGIE
+// ═══════════════════════════════════════════════════════════════
 const ZODIAC_SIGNS = [
-  {s:'Capricorne', e:'♑', from:[12,22], to:[1,19],  el:'Terre',  mod:'Cardinal', ruler:'Saturne',   color:'#78909C'},
-  {s:'Verseau',    e:'♒', from:[1,20],  to:[2,18],  el:'Air',    mod:'Fixe',     ruler:'Uranus',    color:'#42A5F5'},
-  {s:'Poissons',   e:'♓', from:[2,19],  to:[3,20],  el:'Eau',    mod:'Mutable',  ruler:'Neptune',   color:'#7E57C2'},
-  {s:'Bélier',     e:'♈', from:[3,21],  to:[4,19],  el:'Feu',    mod:'Cardinal', ruler:'Mars',      color:'#EF5350'},
-  {s:'Taureau',    e:'♉', from:[4,20],  to:[5,20],  el:'Terre',  mod:'Fixe',     ruler:'Vénus',     color:'#66BB6A'},
-  {s:'Gémeaux',    e:'♊', from:[5,21],  to:[6,20],  el:'Air',    mod:'Mutable',  ruler:'Mercure',   color:'#FFCA28'},
-  {s:'Cancer',     e:'♋', from:[6,21],  to:[7,22],  el:'Eau',    mod:'Cardinal', ruler:'Lune',      color:'#EC407A'},
-  {s:'Lion',       e:'♌', from:[7,23],  to:[8,22],  el:'Feu',    mod:'Fixe',     ruler:'Soleil',    color:'#FFA726'},
-  {s:'Vierge',     e:'♍', from:[8,23],  to:[9,22],  el:'Terre',  mod:'Mutable',  ruler:'Mercure',   color:'#8D6E63'},
-  {s:'Balance',    e:'♎', from:[9,23],  to:[10,22], el:'Air',    mod:'Cardinal', ruler:'Vénus',     color:'#26C6DA'},
-  {s:'Scorpion',   e:'♏', from:[10,23], to:[11,21], el:'Eau',    mod:'Fixe',     ruler:'Pluton',    color:'#AB47BC'},
-  {s:'Sagittaire', e:'♐', from:[11,22], to:[12,21], el:'Feu',    mod:'Mutable',  ruler:'Jupiter',   color:'#FF7043'},
+  {s:'Capricorne',e:'♑',from:[12,22],to:[1,19], el:'Terre',mod:'Cardinal',ruler:'Saturne',  color:'#78909C'},
+  {s:'Verseau',   e:'♒',from:[1,20], to:[2,18], el:'Air',  mod:'Fixe',    ruler:'Uranus',   color:'#42A5F5'},
+  {s:'Poissons',  e:'♓',from:[2,19], to:[3,20], el:'Eau',  mod:'Mutable', ruler:'Neptune',  color:'#7E57C2'},
+  {s:'Bélier',    e:'♈',from:[3,21], to:[4,19], el:'Feu',  mod:'Cardinal',ruler:'Mars',     color:'#EF5350'},
+  {s:'Taureau',   e:'♉',from:[4,20], to:[5,20], el:'Terre',mod:'Fixe',    ruler:'Vénus',    color:'#66BB6A'},
+  {s:'Gémeaux',   e:'♊',from:[5,21], to:[6,20], el:'Air',  mod:'Mutable', ruler:'Mercure',  color:'#FFCA28'},
+  {s:'Cancer',    e:'♋',from:[6,21], to:[7,22], el:'Eau',  mod:'Cardinal',ruler:'Lune',     color:'#EC407A'},
+  {s:'Lion',      e:'♌',from:[7,23], to:[8,22], el:'Feu',  mod:'Fixe',    ruler:'Soleil',   color:'#FFA726'},
+  {s:'Vierge',    e:'♍',from:[8,23], to:[9,22], el:'Terre',mod:'Mutable', ruler:'Mercure',  color:'#8D6E63'},
+  {s:'Balance',   e:'♎',from:[9,23], to:[10,22],el:'Air',  mod:'Cardinal',ruler:'Vénus',    color:'#26C6DA'},
+  {s:'Scorpion',  e:'♏',from:[10,23],to:[11,21],el:'Eau',  mod:'Fixe',    ruler:'Pluton',   color:'#AB47BC'},
+  {s:'Sagittaire',e:'♐',from:[11,22],to:[12,21],el:'Feu',  mod:'Mutable', ruler:'Jupiter',  color:'#FF7043'},
 ];
 
-// ── Calcul signe solaire ──
 function getSolarSign(birthday){
   if(!birthday) return null;
-  const [y,m,d] = birthday.split('-').map(Number);
+  const [,m,d] = birthday.split('-').map(Number);
   for(const z of ZODIAC_SIGNS){
-    const [fm,fd]=z.from, [tm,td]=z.to;
-    if(fm===tm){ if(m===fm && d>=fd && d<=td) return z; }
-    else if(m===fm && d>=fd){ return z; }
-    else if(m===tm && d<=td){ return z; }
+    const [fm,fd]=z.from,[tm,td]=z.to;
+    if(m===fm&&d>=fd) return z;
+    if(m===tm&&d<=td) return z;
   }
   return ZODIAC_SIGNS[0];
 }
 
-// ── Calcul ascendant (méthode simplifiée par maison) ──
-// Basé sur l'heure de naissance locale — 2h par signe en partant du signe précédant
-function getAscendant(birthday, birthTime){
-  if(!birthday || !birthTime) return null;
-  const [y,m,d] = birthday.split('-').map(Number);
-  const [h,min] = birthTime.split(':').map(Number);
-  const solarSign = getSolarSign(birthday);
-  if(!solarSign) return null;
-  const solarIdx = ZODIAC_SIGNS.indexOf(solarSign);
-  // Chaque heure = 30° = 1/24 de tour complet des 12 signes → 2h par signe
-  // L'ascendant tourne d'environ 1° toutes les 4 minutes
-  // À midi (12h), l'ascendant est approximativement au même degré que le signe solaire
-  // Formule simplifiée : offset en signes par rapport au signe solaire
-  const hoursFromNoon = h + min/60 - 12;
-  const signOffset = Math.round(hoursFromNoon / 2);
-  const ascIdx = ((solarIdx + signOffset) % 12 + 12) % 12;
+function getAscendant(birthday,birthTime){
+  if(!birthday||!birthTime) return null;
+  const solar=getSolarSign(birthday); if(!solar) return null;
+  const solarIdx=ZODIAC_SIGNS.indexOf(solar);
+  const [h,min]=birthTime.split(':').map(Number);
+  const hoursFromNoon=h+min/60-12;
+  const signOffset=Math.round(hoursFromNoon/2);
+  const ascIdx=((solarIdx+signOffset)%12+12)%12;
   return ZODIAC_SIGNS[ascIdx];
 }
 
-// ── Calcul signe lunaire (approximation) ──
-// La lune change de signe tous les ~2.5 jours
 function getLunarSign(birthday){
   if(!birthday) return null;
-  const ref = new Date('2000-01-01');
-  const born = new Date(birthday+'T00:00:00');
-  const days = Math.floor((born-ref)/(86400000));
-  // Période lunaire ~27.32 jours, 12 signes = 2.277 jours/signe
-  const lunIdx = ((Math.floor(days/2.277) % 12) + 12) % 12;
+  const ref=new Date('2000-01-01');
+  const born=new Date(birthday+'T00:00:00');
+  const days=Math.floor((born-ref)/86400000);
+  const lunIdx=((Math.floor(days/2.277)%12)+12)%12;
   return ZODIAC_SIGNS[lunIdx];
 }
 
-// ── Compatibilités élémentaires ──
-const COMPAT = {
-  'Feu':   {best:['Feu','Air'],   ok:['Eau','Terre'], msg:'Passionné et créatif'},
-  'Terre': {best:['Terre','Eau'], ok:['Feu','Air'],   msg:'Stable et fiable'},
-  'Air':   {best:['Air','Feu'],   ok:['Terre','Eau'], msg:'Intellectuel et social'},
-  'Eau':   {best:['Eau','Terre'], ok:['Feu','Air'],   msg:'Intuitif et émotionnel'},
+const COMPAT={'Feu':{best:['Feu','Air'],ok:['Eau','Terre']},'Terre':{best:['Terre','Eau'],ok:['Feu','Air']},'Air':{best:['Air','Feu'],ok:['Terre','Eau']},'Eau':{best:['Eau','Terre'],ok:['Feu','Air']}};
+function calcCompat(s1,s2){
+  if(!s1||!s2) return null;
+  const c=COMPAT[s1.el];
+  if(c.best.includes(s2.el)) return {label:'Affinité forte ✨',color:'#4ECDC4'};
+  if(c.ok.includes(s2.el))   return {label:'Bonne entente 😊',color:'#FFD700'};
+  return {label:'Complémentaires 🔄',color:'#F472B6'};
+}
+
+const DAILY_THEMES=['amour','travail','sante','amour','travail','sante','conseil'];
+const THEME_LABELS={amour:'💕 Amour & Relations',travail:'💼 Travail & Ambitions',sante:'🌿 Santé & Vitalité',conseil:'🌟 Conseil du Jour'};
+
+const HORO={
+  'Bélier':{jour:["L'énergie de Mars vous propulse en avant. Une occasion mérite votre attention immédiate — agissez sans hésiter.","Votre instinct de pionnier est aiguisé. Une idée qui germait est maintenant prête à être mise en œuvre.","Un léger accrochage relationnel est possible, mais votre franchise directe désamorcera la tension."],amour:["Votre ardeur est contagieuse. Surprenez votre partenaire par un geste spontané.","La passion est au rendez-vous mais gare à l'impatience. Écoutez avant d'agir."],travail:["Initiative et audace : deux mots qui définissent votre journée. Foncez.","Un projet stagnant reprend vie grâce à votre énergie renouvelée."],sante:["Votre vitalité est excellente. Idéal pour une activité physique intense.","Rechargez vos batteries : une courte pause fait des merveilles."],conseil:"La patience est votre plus grand défi et votre plus grande victoire ce jour."},
+  'Taureau':{jour:["Vénus illumine vos sens. Les plaisirs simples vous comblent d'une satisfaction profonde.","Votre persévérance porte ses fruits. Un effort engagé depuis des semaines trouve sa récompense.","La stabilité que vous construisez est remarquée. Votre fiabilité inspire confiance."],amour:["Votre sensualité est à son apogée. Créez un moment de douceur et d'intimité.","La tendresse et la constance que vous offrez sont précieuses."],travail:["Vos efforts méthodiques aboutissent à un résultat solide et reconnu.","Une opportunité financière demande réflexion mais mérite votre intérêt."],sante:["Le besoin de nature est fort. Une promenade en plein air vous régénère.","Portez attention à votre nuque et épaules — quelques étirements s'imposent."],conseil:"Votre force réside dans la constance. Continuez à bâtir, brique par brique."},
+  'Gémeaux':{jour:["Mercure est en excellente position : vos mots trouvent exactement leur cible. Tout passe avec fluidité.","Votre curiosité vous mène vers une information inattendue qui change votre perspective.","L'agitation mentale est forte. Triez vos priorités pour éviter de vous disperser."],amour:["Votre esprit vif et votre humour séduisent. Une conversation légère peut devenir profonde.","La légèreté est votre atout : transformez une routine en jeu, en découverte."],travail:["Votre adaptabilité est un atout face à un changement imprévu de planning.","Une collaboration inattendue ouvre une porte que vous n'aviez pas envisagée."],sante:["Votre système nerveux est sollicité — accordez-vous des pauses sans écrans.","Votre sommeil mérite attention : coupez les stimulations mentales avant de dormir."],conseil:"Choisissez un cap et tenez-le. La constance est votre leçon du jour."},
+  'Cancer':{jour:["La Lune amplifie votre intuition. Une impression forte concernant un proche mérite d'être entendue.","L'atmosphère familiale est chargée d'émotions. Vous jouez un rôle apaisant naturel.","Un souvenir ressurgit et nourrit votre créativité. Utilisez cet élan."],amour:["Votre sensibilité crée une connexion émotionnelle rare avec votre partenaire.","Osez exprimer vos besoins — l'autre ne peut pas deviner ce que vous gardez en vous."],travail:["Votre mémoire et votre sens du détail font la différence dans un dossier complexe.","Votre capacité à prendre soin des équipes vous vaut une reconnaissance sincère."],sante:["L'estomac est votre baromètre émotionnel — mangez en conscience et dans la sérénité.","Le besoin de cocooning est légitime — offrez-vous un moment de retrait."],conseil:"Prenez soin des autres, mais commencez par vous protéger. Votre bien-être irrigue tout le reste."},
+  'Lion':{jour:["Le Soleil brille sur vous — votre charisme naturel capte tous les regards. Assumez la scène.","Une reconnaissance méritée arrive, peut-être informelle mais sincère. Savourez-la.","Votre générosité est sans limite mais vous avez aussi besoin de vous ressourcer."],amour:["Votre rayonnement est irrésistible. Une soirée romantique initiée par vous laissera une trace.","L'orgueil peut faire obstacle — un geste de douceur vaut mille victoires d'ego."],travail:["Votre leadership inspire l'équipe. Un projet que vous pilotez prend une belle dynamique.","Une décision courageuse est attendue de vous. Votre instinct est juste — osez trancher."],sante:["Votre cœur mérite attention. Modérez les excès et privilégiez la joie.","L'activité physique expressive (danse, sport d'équipe) vous convient parfaitement."],conseil:"Rayonnez sans brûler. La grandeur authentique n'a pas besoin de consommer les autres."},
+  'Vierge':{jour:["Votre sens de l'analyse est affûté. Un problème qui résistait se résout grâce à votre méthode.","Attention à ne pas vous perdre dans les détails au détriment de la vue d'ensemble.","Votre discernement est précieux pour un proche qui cherche un conseil honnête."],amour:["Votre attention aux petits gestes est perçue comme un acte d'amour profond.","Lâchez le contrôle ce soir — laissez place à l'imprévu et à la légèreté."],travail:["Votre organisation et votre fiabilité sont des atouts que personne ne peut ignorer.","Ne vous autocritiquez pas trop sévèrement — vos résultats parlent d'eux-mêmes."],sante:["Votre système digestif est sensible au stress — une alimentation simple est clé.","Pratiquez la pleine conscience : votre mental ne s'arrête jamais."],conseil:"La perfection est l'ennemie du bien. Avancez avec ce que vous avez aujourd'hui."},
+  'Balance':{jour:["Vénus favorise vos relations. Diplomatie et harmonie sont vos maîtres mots.","Votre besoin d'équilibre est mis à l'épreuve par une décision qui ne peut plus être reportée.","Une belle opportunité artistique ou esthétique se présente. Ouvrez les yeux."],amour:["L'harmonie règne dans votre relation — nourrissez-la par un geste de beauté partagée.","Une conversation sur vos aspirations communes rapproche profondément."],travail:["Votre capacité à trouver un consensus là où tout le monde se disputait est remarquée.","Prenez position clairement — votre honnêteté est plus précieuse que votre neutralité."],sante:["Vos reins et votre région lombaire méritent attention — hydratez-vous bien.","L'harmonie de votre environnement a un impact direct sur votre bien-être."],conseil:"Décider, c'est aussi une forme de respect envers vous-même et les autres."},
+  'Scorpion':{jour:["Vous percevez ce qui est caché, non-dit. Utilisez ce pouvoir avec éthique.","Une transformation intérieure est en cours — laissez-vous muer sans résister.","Votre intensité magnétique attire les confidences. Soyez digne de la confiance accordée."],amour:["La profondeur de vos émotions crée une intimité rare quand vous vous l'autorisez.","Une conversation sincère et sans masque transforme positivement votre lien."],travail:["Votre capacité d'investigation fait la lumière sur une situation opaque.","Un projet de transformation profonde est dans vos cordes naturelles."],sante:["Votre vitalité se ressource dans le silence et la solitude consentie.","Votre psyché est intense — une pratique de décompression régulière est essentielle."],conseil:"Votre force n'est pas dans le contrôle, mais dans la transformation de ce qui était."},
+  'Sagittaire':{jour:["Jupiter élargit vos horizons. Une idée ou un projet de voyage nourrit votre âme aventurière.","Votre optimisme est communicatif et redonne de l'élan à ceux qui vous entourent.","Attention à la franchise brutale — votre vérité est précieuse, mais le ton fait la musique."],amour:["Votre humour et votre joie de vivre sont un aphrodisiaque puissant — riez ensemble.","Un voyage ou une aventure partagée, même locale, ravive la flamme."],travail:["Votre vision à long terme apporte une perspective que personne d'autre ne voit.","Une formation ou lecture vous apporte une clé professionnelle précieuse."],sante:["Vos hanches et cuisses sont vos zones sensibles — bougez, étirez, cyclez.","Le grand air et l'espace sont des médicaments pour vous. Sortez."],conseil:"La sagesse n'est pas dans l'accumulation de connaissances, mais dans leur intégration vécue."},
+  'Capricorne':{jour:["Ce que vous construisez aujourd'hui durera — chaque effort compte et rien n'est perdu.","Votre sens des responsabilités est exemplaire, mais vous êtes aussi autorisé(e) à vous reposer.","Une reconnaissance professionnelle tardive mais méritée se profile."],amour:["Votre loyauté et votre constance sont la colonne vertébrale de votre vie amoureuse.","Permettez-vous la vulnérabilité : derrière votre carapace se cache un cœur immense."],travail:["Votre ambition patiente porte ses fruits. Les sacrifices consentis trouvent leur sens.","Votre intégrité professionnelle vous vaut une confiance qui ouvre des portes."],sante:["Vos genoux, os et articulations méritent une attention préventive.","Votre endurance est grande mais pas infinie — identifiez vos signaux d'épuisement."],conseil:"Vous êtes votre critique le plus sévère. Soyez aussi votre plus grand supporter."},
+  'Verseau':{jour:["Une idée qui semble folle aujourd'hui sera la norme dans cinq ans. Ne la censurez pas.","Votre besoin d'indépendance est fort — trouvez l'équilibre entre liberté et engagements.","Une synchronicité frappante signale que vous êtes sur le bon chemin."],amour:["Votre originalité est magnétique. Partagez vos idées les plus audacieuses.","L'amitié profonde est le terreau de votre amour — chérissez ce lien fondamental."],travail:["Votre vision systémique résout un problème collectif aujourd'hui.","Votre réseau est votre force — une connexion active une opportunité insoupçonnée."],sante:["Vos chevilles et circulation sont vos zones à surveiller — bougez régulièrement.","Votre mental hyperactif a besoin de descendre dans le corps — yoga, danse, natation."],conseil:"Votre singularité n'est pas un défaut à corriger, c'est votre contribution au monde."},
+  'Poissons':{jour:["Une création, même modeste, vous connecte à quelque chose de plus grand aujourd'hui.","Vous ressentez exactement ce dont un proche a besoin sans qu'il ait à le dire.","Méfiez-vous de la confusion — ancrez-vous dans une routine simple et physique."],amour:["Votre romantisme profond crée des moments de magie que l'autre n'oublie pas.","Une communication claire, même si elle vous coûte, renforce profondément votre lien."],travail:["Votre intuition concernant un projet est juste — faites-lui confiance.","La créativité et la compassion sont vos atouts professionnels uniques."],sante:["Vos pieds sont votre ancrage — promenades, massage, chaussures confortables.","L'eau est votre élément guérisseur sous toutes ses formes."],conseil:"Vous n'avez pas à tout ressentir pour tout le monde. Votre sensibilité vous appartient d'abord."},
 };
 
-// ── Textes horoscope précis par signe ET par domaine ──
-const HORO_PRECISE = {
-  'Bélier': {
-    jour: [
-      "L'énergie de Mars vous propulse en avant aujourd'hui. Une occasion professionnelle mérite votre attention immédiate — agissez sans hésiter.",
-      "Votre instinct de pionnier est aiguisé. Une idée qui germait depuis quelques semaines est maintenant prête à être mise en œuvre.",
-      "Un léger accrochage relationnel est possible ce matin, mais votre franchise directe désamorcera la tension. Ne ruminez pas.",
-    ],
-    amour: ["Votre ardeur est contagieuse. Surprenez votre partenaire par un geste spontané et ardent.", "La passion est au rendez-vous mais gare à l'impatience. Écoutez avant d'agir.", "Une rencontre stimulante intellectuellement pourrait vous surprendre."],
-    travail: ["Initiative et audace : deux mots qui définissent votre journée. Foncez.", "Un projet stagnant reprend vie grâce à votre énergie renouvelée.", "Attention à ne pas brûler les étapes — la précipitation peut coûter cher."],
-    sante: ["Votre vitalité est excellente. Canal idéal pour une activité physique intense.", "Rechargez vos batteries : une courte sieste ou méditation fait des merveilles.", "Évitez les excès alimentaires en soirée — votre corps demande de la légèreté."],
-    conseil: "La patience est votre plus grand défi et votre plus grande victoire ce jour.",
-  },
-  'Taureau': {
-    jour: [
-      "Vénus illumine vos sens aujourd'hui. Les plaisirs simples — un bon repas, un beau coucher de soleil — vous comblent d'une satisfaction profonde.",
-      "Votre persévérance porte ses fruits. Un effort engagé depuis des semaines trouve enfin sa récompense tangible.",
-      "La stabilité que vous construisez pas à pas est remarquée par votre entourage. Votre fiabilité inspire confiance.",
-    ],
-    amour: ["Votre sensualité est à son apogée. Créez un moment de douceur et d'intimité.", "La tendresse et la constance que vous offrez sont précieuses — ne les minimisez pas.", "Un malentendu mineur peut être dissipé par une attention délicate."],
-    travail: ["Vos efforts méthodiques aboutissent à un résultat solide et reconnu.", "Résistez à la tentation de tout contrôler — déléguez avec confiance.", "Une opportunité financière demande réflexion mais mérite votre intérêt."],
-    sante: ["Le besoin de nature est fort. Une promenade en plein air vous régénère profondément.", "Portez attention à votre nuque et épaules — quelques étirements s'imposent.", "Votre rapport à la nourriture est sensuel — savourez sans culpabilité, mais avec conscience."],
-    conseil: "Votre force réside dans la constance. Continuez à bâtir, brique par brique.",
-  },
-  'Gémeaux': {
-    jour: [
-      "Mercure est en excellente position : vos mots trouvent exactement leur cible. Conversations, négociations, présentations — tout passe avec fluidité.",
-      "Votre curiosité vous mène vers une information inattendue qui change votre perspective sur une situation personnelle.",
-      "L'agitation mentale est forte. Triez vos priorités ce matin pour éviter de vous disperser sur dix fronts à la fois.",
-    ],
-    amour: ["Votre esprit vif et votre humour séduisent. Une conversation légère peut devenir profonde.", "Évitez la superficialité — votre partenaire a besoin de votre présence pleine, pas divisée.", "La légèreté est votre atout : transformez une routine en jeu, en découverte."],
-    travail: ["Votre adaptabilité est un atout majeur face à un changement imprévu de planning.", "Méfiez-vous de la procrastination — votre besoin de variété peut retarder les décisions.", "Une collaboration inattendue ouvre une porte que vous n'aviez pas envisagée."],
-    sante: ["Votre système nerveux est sollicité — accordez-vous des pauses sans écrans.", "L'activité physique variée vous convient bien : alternez endurance et coordination.", "Votre sommeil mérite attention : coupez les stimulations mentales une heure avant de dormir."],
-    conseil: "Choisissez un cap et tenez-le au moins jusqu'à demain soir. La constance est votre leçon du jour.",
-  },
-  'Cancer': {
-    jour: [
-      "La Lune, votre astre maître, amplifie votre intuition. Une impression forte concernant un proche mérite d'être entendue — parlez avec douceur.",
-      "L'atmosphère familiale est chargée d'émotions. Vous jouez un rôle apaisant naturel — votre présence est un ancrage pour les autres.",
-      "Un souvenir ressurgit et nourrit votre créativité. Utilisez cet élan pour un projet artistique ou affectif.",
-    ],
-    amour: ["Votre sensibilité crée une connexion émotionnelle rare avec votre partenaire ce soir.", "Osez exprimer vos besoins — l'autre ne peut pas deviner ce que vous gardez en vous.", "Un soin attentionné — cuisine, lettre, geste tendre — sera reçu comme un trésor."],
-    travail: ["Votre mémoire exceptionnelle et votre sens du détail font la différence dans un dossier complexe.", "Méfiez-vous de la susceptibilité si une remarque professionnelle vous touche personnellement.", "Votre capacité à prendre soin des équipes vous vaut une reconnaissance sincère."],
-    sante: ["L'estomac est votre baromètre émotionnel — mangez en conscience et dans la sérénité.", "Un bain chaud ou un rituel apaisant ce soir recharge vos réserves d'énergie.", "Le besoin de cocooning est légitime — offrez-vous un moment de retrait sans culpabilité."],
-    conseil: "Prenez soin des autres, mais commencez par vous protéger. Votre bien-être irrigue tout le reste.",
-  },
-  'Lion': {
-    jour: [
-      "Le Soleil brille sur vous aujourd'hui — votre charisme naturel capte tous les regards. Assumez la scène avec générosité.",
-      "Une reconnaissance méritée arrive, peut-être de façon informelle mais sincère. Savourez-la sans fausse modestie.",
-      "Votre générosité est sans limite mais attention à ne pas tout donner : vous avez aussi besoin de vous ressourcer.",
-    ],
-    amour: ["Votre rayonnement est irrésistible. Une soirée romantique initiée par vous laissera une trace durable.", "L'orgueil peut faire obstacle — un geste de douceur vaut mille fois une victoire d'ego.", "Votre loyauté est votre plus beau cadeau amoureux : exprimez-la concrètement."],
-    travail: ["Votre leadership inspire l'équipe. Un projet que vous pilotez prend une belle dynamique.", "Évitez de monopoliser la lumière — valoriser vos collègues renforce votre autorité naturelle.", "Une décision courageuse est attendue de vous. Votre instinct est juste — osez trancher."],
-    sante: ["Votre cœur — au sens propre — mérite attention. Modérez les excès et privilegiez la joie plutôt que l'agitation.", "L'activité physique expressive (danse, sport d'équipe) vous convient parfaitement.", "Un moment de soleil réel — même quelques minutes — booste votre moral considérablement."],
-    conseil: "Rayonnez sans brûler. La grandeur authentique n'a pas besoin de consommer les autres.",
-  },
-  'Vierge': {
-    jour: [
-      "Votre sens de l'analyse est affûté comme rarement. Un problème qui résistait depuis des jours se résout grâce à votre méthode rigoureuse.",
-      "Attention à ne pas vous perdre dans les détails au détriment de la vue d'ensemble. Parfois, 80% bien fait vaut mieux que 100% jamais terminé.",
-      "Votre discernement est précieux pour un proche qui cherche un conseil honnête et structuré.",
-    ],
-    amour: ["Votre attention aux petits gestes et détails est perçue comme un acte d'amour profond.", "Lâchez le contrôle ce soir — laissez place à l'imprévu et à la légèreté.", "Un service rendu avec soin vaut plus que les grands discours romantiques."],
-    travail: ["Votre organisation et votre fiabilité sont des atouts que personne ne peut ignorer aujourd'hui.", "Un projet complexe avance grâce à votre capacité à décomposer chaque étape.", "Ne vous autocritiquez pas trop sévèrement — vos résultats parlent d'eux-mêmes."],
-    sante: ["Votre système digestif est sensible au stress — une alimentation simple et régulière est clé.", "Pratiquez la pleine conscience : votre mental ne s'arrête jamais, donnez-lui une pause méritée.", "Un check-up de routine ou un suivi préventif est dans les astres — ne repoussez plus."],
-    conseil: "La perfection est l'ennemie du bien. Avancez avec ce que vous avez aujourd'hui.",
-  },
-  'Balance': {
-    jour: [
-      "Vénus favorise vos relations ce jour — diplomatie et harmonie sont vos maîtres mots. Une négociation délicate trouve un dénouement élégant.",
-      "Votre besoin d'équilibre est mis à l'épreuve par une décision qui ne peut plus être reportée. Faites confiance à votre sens de la justice.",
-      "Une belle opportunité artistique ou esthétique se présente. Ouvrez les yeux.",
-    ],
-    amour: ["L'harmonie règne dans votre relation — nourrissez-la par un geste de beauté partagée.", "Votre hésitation naturelle peut laisser l'autre dans l'attente — soyez décisif(ve) pour une fois.", "Une conversation sur vos aspirations communes rapproche profondément."],
-    travail: ["Votre capacité à trouver un consensus là où tout le monde se disputait est remarquée.", "Prenez position clairement — votre honnêteté est plus précieuse que votre neutralité.", "Un projet esthétique ou créatif est dans votre zone de génie naturel."],
-    sante: ["Vos reins et votre région lombaire méritent attention — hydratez-vous bien.", "L'équilibre entre activité et repos est votre recette de santé : respectez-le.", "La beauté et l'harmonie de votre environnement ont un impact direct sur votre bien-être."],
-    conseil: "Décider, c'est aussi une forme de respect envers vous-même et les autres.",
-  },
-  'Scorpion': {
-    jour: [
-      "Pluton et Mars amplifient votre perspicacité. Vous percevez ce qui est caché, non-dit, dissimulé. Utilisez ce pouvoir avec éthique.",
-      "Une transformation intérieure est en cours — résistez à l'envie de la contrôler. Laissez-vous muer.",
-      "Votre intensité magnétique attire les confidences. Soyez digne de la confiance accordée.",
-    ],
-    amour: ["La profondeur de vos émotions crée une intimité rare quand vous vous permettez de l'exprimer.", "La jalousie ou le contrôle peuvent ternir une belle connexion — faites confiance.", "Une conversation de fond, sincère et sans masque, transforme positivement votre lien."],
-    travail: ["Votre capacité d'investigation fait la lumière sur une situation opaque — vos conclusions sont justes.", "Méfiez-vous du pouvoir pour le pouvoir. Votre vrai talent est la transformation, pas la domination.", "Un projet de rénovation, restructuration ou profond changement est dans vos cordes."],
-    sante: ["Votre vitalité se ressource dans le silence et la solitude consentie — accordez-vous ce retrait.", "Les organes reproducteurs et la région pelvienne méritent une attention préventive.", "Votre psyché est intense — une pratique régulière de décompression (sport, créativité) est essentielle."],
-    conseil: "Votre force n'est pas dans le contrôle, mais dans la transformation de ce qui était.",
-  },
-  'Sagittaire': {
-    jour: [
-      "Jupiter élargit vos horizons aujourd'hui. Une idée philosophique ou un projet de voyage — même imaginaire — nourrit votre âme aventurière.",
-      "Votre optimisme est communicatif et il redonne de l'élan à un groupe ou une équipe qui en manquait.",
-      "Attention à la franchise brutale — votre vérité est précieuse, mais le ton fait la musique.",
-    ],
-    amour: ["Votre humour et votre joie de vivre sont un aphrodisiaque puissant — riez ensemble.", "La liberté est votre besoin fondamental — communiquez-le avec douceur plutôt qu'en fuyant.", "Un voyage ou une aventure partagée, même locale, ravive la flamme."],
-    travail: ["Votre vision stratégique et à long terme apporte une perspective que personne d'autre ne voit.", "Méfiez-vous de l'excès d'enthousiasme : vérifiez les détails avant de vous engager.", "Une formation, lecture ou conférence vous apporte une clé professionnelle précieuse."],
-    sante: ["Vos hanches et cuisses sont vos zones sensibles — bougez, étirez, cyclez.", "Le grand air et l'espace sont des médicaments pour vous. Sortez de l'intérieur.", "Votre foie mérite attention — modérez l'alcool et les graisses en excès."],
-    conseil: "La sagesse n'est pas dans l'accumulation de connaissances, mais dans leur intégration vécue.",
-  },
-  'Capricorne': {
-    jour: [
-      "Saturne vous accorde une discipline remarquable. Ce que vous construisez aujourd'hui durera — chaque effort compte et rien n'est perdu.",
-      "Votre sens des responsabilités est exemplaire, mais n'oubliez pas que vous êtes aussi autorisé(e) à vous reposer.",
-      "Une reconnaissance professionnelle tardive mais méritée se profile à l'horizon.",
-    ],
-    amour: ["Votre loyauté et votre constance sont la colonne vertébrale de votre vie amoureuse — honorez-les.", "Permettez-vous la vulnérabilité : derrière votre carapace se cache un cœur immense.", "Un geste concret — organisation, soutien pratique — est votre langage d'amour naturel."],
-    travail: ["Votre ambition patiente porte ses fruits. Les sacrifices consentis trouvent leur sens aujourd'hui.", "Une responsabilité supplémentaire vous est confiée — prenez le temps d'évaluer avant d'accepter.", "Votre intégrité professionnelle vous vaut une confiance qui ouvre des portes."],
-    sante: ["Vos genoux, os et articulations méritent une attention préventive — stretching et calcium.", "Apprenez à lâcher le contrôle à intervalles réguliers : le corps stocke ce que l'esprit refuse.", "Votre endurance est grande mais pas infinie — identifiez vos signaux d'épuisement."],
-    conseil: "Vous êtes votre critique le plus sévère. Soyez aussi votre plus grand supporter.",
-  },
-  'Verseau': {
-    jour: [
-      "Uranus active votre génie novateur. Une idée qui semble folle aujourd'hui sera la norme dans cinq ans. Ne la censurez pas.",
-      "Votre besoin d'indépendance est fort — trouvez l'équilibre entre votre liberté et vos engagements collectifs.",
-      "Un lien amical inattendu ou une synchronicité frappante signale que vous êtes sur le bon chemin.",
-    ],
-    amour: ["Votre originalité est magnétique. Partagez vos idées les plus audacieuses — c'est là que vous séduisez vraiment.", "L'amitié profonde est le terreau de votre amour — chérissez ce lien fondamental.", "Méfiez-vous de la détachement émotionnel comme mécanisme de protection — ouvrez-vous."],
-    travail: ["Votre vision d'avenir et votre pensée systémique résolvent un problème collectif aujourd'hui.", "Votre réseau est votre force — une connexion active une opportunité insoupçonnée.", "Innovez, mais respectez les contraintes pratiques qui permettent à vos idées de se réaliser."],
-    sante: ["Vos chevilles et circulation sont vos zones à surveiller — bougez régulièrement.", "Votre mental hyperactif a besoin de descendre dans le corps — yoga, danse, natation.", "Les environnements trop conventionnels vous épuisent — cherchez de l'espace et de l'air."],
-    conseil: "Votre singularité n'est pas un défaut à corriger, c'est votre contribution au monde.",
-  },
-  'Poissons': {
-    jour: [
-      "Neptune amplifie votre sensibilité artistique et spirituelle. Une création, même modeste, vous connecte à quelque chose de plus grand.",
-      "Votre empathie est un superpouvoir aujourd'hui — vous ressentez exactement ce dont un proche a besoin sans qu'il ait à le dire.",
-      "Méfiez-vous de la confusion ou du sentiment de flottement — ancrez-vous dans une routine simple et physique.",
-    ],
-    amour: ["Votre romantisme profond crée des moments de magie que l'autre n'oublie pas.", "Vos frontières émotionnelles méritent attention — l'amour ne signifie pas se dissoudre dans l'autre.", "Une communication claire et directe, même si elle vous coûte, renforce profondément votre lien."],
-    travail: ["Votre intuition concernant un projet ou un collègue est juste — faites-lui confiance.", "La créativité, la compassion et l'imaginaire sont vos atouts professionnels uniques.", "Méfiez-vous de la procrastination par débordement émotionnel — commencez petit, maintenant."],
-    sante: ["Vos pieds sont votre ancrage — promenades pieds nus, massage, chaussures confortables.", "L'eau est votre élément guérisseur sous toutes ses formes — pluie, bain, natation.", "Protégez votre système immunitaire : votre porosité émotionnelle peut vous épuiser physiquement."],
-    conseil: "Vous n'avez pas à tout ressentir pour tout le monde. Votre sensibilité vous appartient d'abord.",
-  },
-};
-
-// ── Thème du jour (rotation sur 7 jours) ──
-const DAILY_THEMES = ['amour','travail','sante','amour','travail','sante','conseil'];
-
-// ── Compatibilité entre membres ──
-function calcCompat(sign1, sign2){
-  if(!sign1||!sign2) return null;
-  const el1=sign1.el, el2=sign2.el;
-  const c=COMPAT[el1];
-  if(c.best.includes(el2)) return {score:5,label:'Affinité forte ✨',color:'#4ECDC4'};
-  if(c.ok.includes(el2))   return {score:3,label:'Bonne entente 😊',color:'#FFD700'};
-  return {score:2,label:'Complémentaires 🔄',color:'#F472B6'};
+function getAscendantDesc(asc){
+  const d={'Bélier':"Présence directe et dynamique — vous entrez dans une pièce et ça se remarque immédiatement.",'Taureau':"Apparence calme et rassurante. Les autres vous perçoivent comme fiable et ancré.",'Gémeaux':"Vous paraissez vif, curieux, adaptable. Votre intelligence sociale est immédiatement perçue.",'Cancer':"Première impression douce et protectrice. On sent votre sensibilité avant même que vous parliez.",'Lion':"Présence royale naturelle. Votre entrée en scène est magnétique et soignée.",'Vierge':"Précis, discret et attentif aux détails. On vous perçoit comme fiable et méthodique.",'Balance':"Apparence harmonieuse et attitude naturellement diplomatique. Vous inspirez l'équilibre.",'Scorpion':"Intensité magnétique et mystérieuse. Les autres ressentent votre profondeur avant de la comprendre.",'Sagittaire':"Vous paraissez ouvert, enthousiaste et aventurier. Votre optimisme est contagieux.",'Capricorne':"Sérieux, mature et compétent — c'est l'impression que vous donnez naturellement.",'Verseau':"Aura originale et indépendante. On vous perçoit comme différent, innovant, un peu mystérieux.",'Poissons':"Douceur, sensibilité et un regard qui semble voir ailleurs. Vous inspirez confiance et compassion."};
+  return d[asc]||"L'ascendant colore votre personnalité d'une nuance unique.";
 }
 
-// ── Nombre chanceux du jour ──
-function luckyNumber(sign, date){
-  const d=new Date(date||Date.now());
-  const base=(d.getDate()*7 + d.getMonth()*3 + ZODIAC_SIGNS.indexOf(sign)) % 99;
-  return base+1;
-}
-
-// ── Couleur chanceuse ──
-const LUCKY_COLORS = {
-  'Feu':   ['Rouge rubis 🔴','Orange solaire 🟠','Or éclatant 🟡'],
-  'Terre': ['Vert forêt 🟢','Brun chaud 🟫','Doré mat 🟡'],
-  'Air':   ['Bleu ciel 🔵','Lavande 💜','Argent ✨'],
-  'Eau':   ['Bleu marine 🌊','Vert d\'eau 💚','Violet profond 🟣'],
-};
-
-function luckyColor(sign, seed){
-  const arr=LUCKY_COLORS[sign.el]||['Or ✨'];
-  return arr[seed%arr.length];
-}
-
-// ── Étoiles du jour ──
-function starRating(sign, date){
-  const d=new Date(date||Date.now());
-  const n=(d.getDate()+ZODIAC_SIGNS.indexOf(sign)*3+d.getMonth())%5;
-  return '★'.repeat(n+3)+'☆'.repeat(2-Math.min(2,n));
-}
-
-// ── Render horoscope complet ──
 function renderHoro(){
-  const el=document.getElementById('horoCards');
-  if(!el) return;
-
+  const el=document.getElementById('horoCards'); if(!el) return;
   const today=new Date();
-  const todayStr=today.toISOString().slice(0,10);
   const seed=today.getDate()+today.getMonth()*31;
   const themeKey=DAILY_THEMES[today.getDay()];
-
-  // Construire la liste des personnes à afficher
-  // Priorité : membres Supabase avec birthday, fallback sur HORO_DATA
-  let persons=[];
-  if(S.members.length){
-    persons=S.members.filter(m=>m.birthday).map(m=>({
-      name:m.name, photo:m.photo, color:m.color,
-      birthday:m.birthday, birthTime:m.birthTime||null, birthPlace:m.birthPlace||null,
-    }));
-  }
-  if(!persons.length){
-    persons=HORO_DATA.map(h=>({name:h.name,photo:null,color:h.color,birthday:h.birth,birthTime:null,birthPlace:null}));
-  }
-
-  if(!persons.length){
-    el.innerHTML='<div style="color:rgba(255,255,255,.4);text-align:center;padding:30px;">Ajoutez vos dates de naissance dans les profils pour voir votre horoscope !</div>';
-    return;
-  }
-
-  // Date affichée
   const dayLabel=today.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  const themeLabels={amour:'💕 Amour & Relations',travail:'💼 Travail & Ambitions',sante:'🌿 Santé & Vitalité',conseil:'🌟 Conseil du Jour'};
-
-  let html=`<div style="font-size:12px;color:rgba(255,255,255,.35);margin-bottom:16px;letter-spacing:1px;text-transform:uppercase;">
-    ${dayLabel} · Thème : ${themeLabels[themeKey]||'🌟 Conseil'}
-  </div>`;
-
-  // Cards individuelles
-  html += persons.map(p=>{
-    const solar=getSolarSign(p.birthday);
-    if(!solar) return '';
-    const asc=p.birthTime ? getAscendant(p.birthday,p.birthTime) : null;
+  let persons=S.members.filter(m=>m.birthday).map(m=>({name:m.name,photo:m.photo,color:m.color,birthday:m.birthday,birthTime:m.birthTime||null,birthPlace:m.birthPlace||null}));
+  if(!persons.length){ el.innerHTML='<div style="color:rgba(255,255,255,.4);text-align:center;padding:30px;">Ajoutez vos dates de naissance dans les profils 👥</div>'; return; }
+  el.innerHTML=`<div style="font-size:11px;color:rgba(255,255,255,.3);margin-bottom:14px;letter-spacing:1px;text-transform:uppercase;">${dayLabel} · Thème : ${THEME_LABELS[themeKey]}</div>`
+  +persons.map(p=>{
+    const solar=getSolarSign(p.birthday); if(!solar) return '';
+    const asc=p.birthTime?getAscendant(p.birthday,p.birthTime):null;
     const lunar=getLunarSign(p.birthday);
-    const texts=HORO_PRECISE[solar.s];
-    if(!texts) return '';
-
-    // Texte du jour (rotation sur les 3 textes)
-    const dayTexts=texts.jour||[];
-    const dayText=dayTexts[seed%dayTexts.length]||'';
-    // Texte thématique
-    const themeTexts=texts[themeKey]||[];
-    const themeText=themeTexts[seed%themeTexts.length]||texts.conseil||'';
-    // Conseil
-    const conseil=texts.conseil||'';
-
-    const lucky=luckyNumber(solar,todayStr);
-    const lcolor=luckyColor(solar,seed);
-    const stars=starRating(solar,todayStr);
-    const av=p.photo
-      ? `<img src="${p.photo}" style="width:60px;height:60px;border-radius:50%;object-fit:cover;border:3px solid ${p.color};">`
-      : `<div style="width:60px;height:60px;border-radius:50%;background:${p.color};display:flex;align-items:center;justify-content:center;font-size:24px;font-weight:800;color:white;">${p.name[0]}</div>`;
-
-    // Compatibilités avec les autres membres
-    const others=persons.filter(x=>x.name!==p.name);
-    const compats=others.slice(0,3).map(o=>{
-      const os=getSolarSign(o.birthday); if(!os) return '';
-      const c=calcCompat(solar,os);
-      return c ? `<span style="font-size:11px;background:${c.color}22;color:${c.color};border:1px solid ${c.color}44;border-radius:20px;padding:2px 8px;">${o.name} ${c.label}</span>` : '';
-    }).join('');
-
-    return `<div style="background:linear-gradient(135deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:20px;margin-bottom:4px;">
-      <!-- En-tête -->
-      <div style="display:flex;gap:14px;align-items:flex-start;margin-bottom:16px;">
+    const h=HORO[solar.s]||HORO['Gémeaux'];
+    const dayText=h.jour[seed%h.jour.length];
+    const themeArr=h[themeKey]||[h.conseil];
+    const themeText=Array.isArray(themeArr)?themeArr[seed%themeArr.length]:themeArr;
+    const lucky=((seed*(p.birthday.charCodeAt(5)||1))%99)+1;
+    const lcolors=['Rouge rubis 🔴','Bleu ciel 🔵','Vert forêt 🟢','Or éclatant 🟡','Violet 🟣','Rose 🌸'];
+    const lcolor=lcolors[seed%lcolors.length];
+    const stars='★'.repeat(3+(seed%3))+'☆'.repeat(2-(seed%3>2?2:seed%3));
+    const av=p.photo?`<img src="${p.photo}" style="width:56px;height:56px;border-radius:50%;object-fit:cover;border:3px solid ${p.color};">`:`<div style="width:56px;height:56px;border-radius:50%;background:${p.color};display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800;color:white;">${p.name[0]}</div>`;
+    const compats=persons.filter(x=>x.name!==p.name).slice(0,3).map(o=>{const os=getSolarSign(o.birthday);if(!os)return'';const c=calcCompat(solar,os);return c?`<span style="font-size:11px;background:${c.color}22;color:${c.color};border:1px solid ${c.color}44;border-radius:20px;padding:2px 8px;">${o.name} ${c.label}</span>`:''}).join('');
+    return `<div style="background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.1);border-radius:20px;padding:18px;margin-bottom:12px;">
+      <div style="display:flex;gap:12px;align-items:flex-start;margin-bottom:14px;">
         <div style="flex-shrink:0;">${av}</div>
         <div style="flex:1;min-width:0;">
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
-            <span style="font-family:'Baloo 2',sans-serif;font-size:18px;font-weight:800;color:white;">${p.name}</span>
-            <span style="font-size:22px;">${solar.e}</span>
-            <span style="font-size:12px;font-weight:700;background:${p.color}33;color:${p.color};border:1px solid ${p.color}55;border-radius:20px;padding:3px 10px;">${solar.s}</span>
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:5px;">
+            <span style="font-family:'Baloo 2',sans-serif;font-size:17px;font-weight:800;color:white;">${p.name}</span>
+            <span style="font-size:20px;">${solar.e}</span>
+            <span style="font-size:12px;font-weight:700;background:${p.color}33;color:${p.color};border:1px solid ${p.color}55;border-radius:20px;padding:2px 10px;">${solar.s}</span>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:4px;">
+            ${asc?`<span style="font-size:11px;color:rgba(255,255,255,.5);">⬆️ Asc. <strong style="color:${asc.color};">${asc.e} ${asc.s}</strong></span>`:`<span style="font-size:11px;color:rgba(255,255,255,.25);font-style:italic;">⬆️ Ajoutez l'heure de naissance pour l'ascendant</span>`}
+            ${lunar?`<span style="font-size:11px;color:rgba(255,255,255,.45);">🌙 Lune en <strong style="color:#a78bfa;">${lunar.e} ${lunar.s}</strong></span>`:''}
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            ${asc ? `<span style="font-size:11px;color:rgba(255,255,255,.5);">⬆️ Ascendant <strong style="color:${asc.color};">${asc.e} ${asc.s}</strong></span>` : `<span style="font-size:11px;color:rgba(255,255,255,.3);font-style:italic;">⬆️ Ajoutez l'heure de naissance pour l'ascendant</span>`}
-            ${lunar ? `<span style="font-size:11px;color:rgba(255,255,255,.5);">🌙 Lune en <strong style="color:#a78bfa;">${lunar.e} ${lunar.s}</strong></span>` : ''}
-          </div>
-          <div style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap;">
-            <span style="font-size:12px;color:rgba(255,255,255,.35);">Élément : <strong style="color:rgba(255,255,255,.6);">${solar.el}</strong></span>
-            <span style="font-size:12px;color:rgba(255,255,255,.35);">Planète : <strong style="color:rgba(255,255,255,.6);">${solar.ruler}</strong></span>
+            <span style="font-size:11px;color:rgba(255,255,255,.3);">${solar.el} · ${solar.ruler}</span>
+            <span style="font-size:13px;color:#FFD700;">${stars}</span>
           </div>
         </div>
-        <div style="flex-shrink:0;text-align:right;">
-          <div style="font-size:14px;color:#FFD700;">${stars}</div>
+      </div>
+      <div style="background:rgba(255,255,255,.04);border-left:3px solid ${p.color};border-radius:0 12px 12px 0;padding:11px 13px;margin-bottom:10px;">
+        <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:${p.color};margin-bottom:5px;">🌅 Le jour en bref</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.82);line-height:1.7;">${dayText}</div>
+      </div>
+      <div style="background:rgba(255,255,255,.03);border-radius:12px;padding:11px 13px;margin-bottom:10px;">
+        <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.35);margin-bottom:5px;">${THEME_LABELS[themeKey]}</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.78);line-height:1.7;">${themeText}</div>
+      </div>
+      ${asc?`<div style="background:${asc.color}15;border:1px solid ${asc.color}33;border-radius:12px;padding:11px 13px;margin-bottom:10px;">
+        <div style="font-size:10px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:${asc.color};margin-bottom:4px;">⬆️ Ascendant ${asc.s} ${asc.e}${p.birthPlace?' · '+p.birthPlace:''}</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.65);line-height:1.6;">${getAscendantDesc(asc.s)}</div>
+      </div>`:''}
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:${compats?'10px':'0'};">
+        <div style="flex:1;min-width:150px;background:rgba(255,215,0,.07);border-radius:10px;padding:9px 12px;">
+          <div style="font-size:10px;font-weight:800;color:rgba(255,215,0,.5);margin-bottom:3px;">💡 Conseil</div>
+          <div style="font-size:12px;color:rgba(255,255,255,.65);font-style:italic;line-height:1.5;">${h.conseil}</div>
+        </div>
+        <div style="background:rgba(255,255,255,.04);border-radius:10px;padding:9px 12px;display:flex;flex-direction:column;gap:3px;">
+          <div style="font-size:11px;color:rgba(255,255,255,.4);">🍀 <strong style="color:${p.color};font-size:15px;">${lucky}</strong></div>
+          <div style="font-size:10px;color:rgba(255,255,255,.35);">${lcolor}</div>
         </div>
       </div>
-
-      <!-- Texte du jour -->
-      <div style="background:rgba(255,255,255,.04);border-left:3px solid ${p.color};border-radius:0 12px 12px 0;padding:12px 14px;margin-bottom:12px;">
-        <div style="font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:${p.color};margin-bottom:6px;">🌅 Le jour en bref</div>
-        <div style="font-size:14px;color:rgba(255,255,255,.85);line-height:1.7;">${dayText}</div>
-      </div>
-
-      <!-- Thème du jour -->
-      <div style="background:rgba(255,255,255,.03);border-radius:12px;padding:12px 14px;margin-bottom:12px;">
-        <div style="font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:rgba(255,255,255,.4);margin-bottom:6px;">${themeLabels[themeKey]||'🌟'}</div>
-        <div style="font-size:14px;color:rgba(255,255,255,.8);line-height:1.7;">${themeText}</div>
-      </div>
-
-      ${asc ? `<!-- Ascendant -->
-      <div style="background:linear-gradient(135deg,${asc.color}22,${asc.color}11);border:1px solid ${asc.color}33;border-radius:12px;padding:12px 14px;margin-bottom:12px;">
-        <div style="font-size:11px;font-weight:800;letter-spacing:1.5px;text-transform:uppercase;color:${asc.color};margin-bottom:4px;">⬆️ Ascendant ${asc.s} ${asc.e} · ${p.birthPlace?'né(e) à '+p.birthPlace:''}</div>
-        <div style="font-size:13px;color:rgba(255,255,255,.7);line-height:1.6;">${getAscendantDesc(solar.s, asc.s)}</div>
-      </div>` : ''}
-
-      <!-- Conseil + chiffres -->
-      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:${compats?'12px':'0'};">
-        <div style="flex:1;min-width:160px;background:rgba(255,215,0,.08);border-radius:10px;padding:10px 12px;">
-          <div style="font-size:11px;font-weight:800;color:rgba(255,215,0,.6);margin-bottom:4px;">💡 Conseil du jour</div>
-          <div style="font-size:12px;color:rgba(255,255,255,.7);font-style:italic;line-height:1.5;">${conseil}</div>
-        </div>
-        <div style="background:rgba(255,255,255,.04);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:4px;">
-          <div style="font-size:11px;color:rgba(255,255,255,.4);">🍀 Chiffre chanceux : <strong style="color:${p.color};font-size:16px;">${lucky}</strong></div>
-          <div style="font-size:11px;color:rgba(255,255,255,.4);">🎨 Couleur : <strong style="color:rgba(255,255,255,.7);">${lcolor}</strong></div>
-        </div>
-      </div>
-
-      ${compats ? `<!-- Compatibilités -->
-      <div style="border-top:1px solid rgba(255,255,255,.07);padding-top:10px;">
-        <div style="font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.25);margin-bottom:6px;">💫 Affinités familiales</div>
-        <div style="display:flex;gap:6px;flex-wrap:wrap;">${compats}</div>
-      </div>` : ''}
+      ${compats?`<div style="border-top:1px solid rgba(255,255,255,.07);padding-top:8px;"><div style="font-size:10px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:rgba(255,255,255,.2);margin-bottom:5px;">💫 Affinités</div><div style="display:flex;gap:5px;flex-wrap:wrap;">${compats}</div></div>`:''}
     </div>`;
   }).join('');
-
-  el.innerHTML = html;
 }
 
-// ── Description de la combinaison Soleil/Ascendant ──
-function getAscendantDesc(solar, asc){
-  const descs = {
-    'Bélier':    "L'énergie de Mars en Ascendant vous donne une présence directe, dynamique et immédiatement perçue. Vous entrez dans une pièce et on le remarque.",
-    'Taureau':   "L'Ascendant Taureau confère une apparence calme, solide et rassurante. Les autres vous perçoivent comme fiable et ancré, même si votre intérieur bouillonne.",
-    'Gémeaux':   "Ascendant Gémeaux : vous paraissez vif, curieux, adaptable. Votre intelligence sociale est immédiatement perçue par les autres.",
-    'Cancer':    "Votre Ascendant Cancer donne une première impression douce et protectrice. On sent votre sensibilité avant même que vous parliez.",
-    'Lion':      "Ascendant Lion : vous avez naturellement une présence royale. Votre apparence est soignée et votre entrée en scène magnétique.",
-    'Vierge':    "Votre Ascendant Vierge vous rend précis, discret et attentif aux détails en apparence. On vous perçoit comme fiable et méthodique.",
-    'Balance':   "Ascendant Balance : votre apparence est harmonieuse et votre attitude naturellement diplomatique. Vous inspirez l'équilibre.",
-    'Scorpion':  "Votre Ascendant Scorpion vous confère une intensité magnétique et mystérieuse. Les autres ressentent votre profondeur avant de la comprendre.",
-    'Sagittaire':"Ascendant Sagittaire : vous paraissez ouvert, enthousiaste et aventurier. Votre optimisme est contagieux dès la première rencontre.",
-    'Capricorne':"Ascendant Capricorne : sérieux, mature et compétent — c'est l'impression que vous donnez naturellement, même jeune.",
-    'Verseau':   "Votre Ascendant Verseau vous donne une aura originale et indépendante. On vous perçoit comme différent, innovant, un peu mystérieux.",
-    'Poissons':  "Ascendant Poissons : douceur, sensibilité et un regard qui semble voir ailleurs. Vous inspirez confiance et compassion instantanément.",
-  };
-  return descs[asc] || `L'Ascendant ${asc} colore votre signe solaire ${solar} d'une nouvelle nuance.`;
+// ═══════════════════════════════════════════════════════════════
+// DB LOAD
+// ═══════════════════════════════════════════════════════════════
+async function dbLoad(){
+  async function safe(table,order){
+    try{ const r=await sb.from(table).select('*').order(order); if(r.error) console.warn(table,r.error.message); return r; }
+    catch(e){ console.warn(table,'failed',e.message); return {data:null}; }
+  }
+  const [m,e,p,c,s]=await Promise.all([safe('members','id'),safe('events','id'),safe('projects','id'),safe('chats','ts'),safe('shopping','created_at')]);
+  if(m.data) S.members  =m.data.map(r=>({id:r.id,name:r.name,role:r.role,color:r.color||'#FF6B6B',photo:r.photo,birthday:r.birthday,birthTime:r.birth_time||null,birthPlace:r.birth_place||null}));
+  if(e.data) S.events   =e.data.map(r=>({id:r.id,title:r.title,date:r.date,dateEnd:r.date_end,time:r.time,timeEnd:r.time_end,cat:r.cat,memberIds:r.member_ids||[],location:r.location,note:r.note}));
+  if(p.data) S.projects =p.data.map(r=>({id:r.id,name:r.name,emoji:r.emoji||'🎯',desc:r.description,date:r.date,budget:r.budget,progress:r.progress||0,memberIds:r.member_ids||[]}));
+  if(c.data) S.chats    =c.data.map(r=>({id:r.id,memberId:r.member_id,text:r.text,ts:r.ts}));
+  if(s.data) S.shopItems=s.data.map(r=>({id:r.id,name:r.name,emoji:r.emoji,category:r.category,done:r.done,memberId:r.member_id}));
+  renderAll();
 }
 
-// ═══════════════════════════════════════════════════════════
-// ANNIVERSAIRES
-// ═══════════════════════════════════════════════════════════
-const BDAY_MSGS = [
-  "C'est ton grand jour ! Toute la famille t'aime énormément ! 🎉",
-  "Joyeux anniversaire ! Que cette journée soit aussi extraordinaire que toi ! 🌟",
-  "Une année de plus, encore plus de bonheur à venir ! 🎂",
-  "Le jour le plus spécial de l'année est arrivé ! Profites-en à fond ! 🥳",
-];
-
-function checkBirthdays(){
-  const today = new Date();
-  const mm = String(today.getMonth()+1).padStart(2,'0');
-  const dd = String(today.getDate()).padStart(2,'0');
-  const todayMD = mm+'-'+dd;
-  const bdayKey = 'fs_bday_shown_'+today.getFullYear();
-  const shown = JSON.parse(localStorage.getItem(bdayKey)||'[]');
-  S.members.forEach(m=>{
-    if(!m.birthday) return;
-    const mbd = m.birthday.slice(5); // MM-DD
-    if(mbd !== todayMD) return;
-    if(shown.includes(m.id)) return;
-    shown.push(m.id);
-    localStorage.setItem(bdayKey, JSON.stringify(shown));
-    setTimeout(()=>showBdayBanner(m), 800);
-  });
+// ═══════════════════════════════════════════════════════════════
+// RENDER ALL
+// ═══════════════════════════════════════════════════════════════
+function renderAll(){
+  renderSidebar(); renderCalendar(); renderEvents(); renderChat();
+  renderShop(); renderProjects(); renderWidget(); renderQbMembers();
+  updateStats();
+  if(_currentSection==='horo') renderHoro();
+  if(_currentSection==='memories') renderMemories();
 }
 
-function showBdayBanner(member){
-  const age = member.birthday ? new Date().getFullYear() - parseInt(member.birthday.slice(0,4)) : null;
-  const msg = BDAY_MSGS[Math.floor(Math.random()*BDAY_MSGS.length)];
-  const av = member.photo
-    ? `<img src="${member.photo}" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:4px solid white;margin-bottom:12px;">`
-    : `<div style="width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 12px;">${member.name[0]}</div>`;
-  const banner = document.createElement('div');
-  banner.className = 'bday-banner';
-  banner.id = 'bdayBanner';
-  banner.innerHTML = `
-    <div class="bday-card">
-      ${av}
-      <div style="font-size:48px;margin-bottom:8px;" class="bday-emoji">🎂</div>
-      <div class="bday-name">Joyeux anniversaire ${member.name} ! 🎉</div>
-      ${age ? `<div style="font-size:22px;color:rgba(255,255,255,.85);font-weight:700;margin:4px 0;">${age} ans aujourd'hui !</div>` : ''}
-      <div class="bday-msg">${msg}</div>
-      <button class="bday-close" onclick="closeBday()">🎊 Merci !</button>
-    </div>`;
-  document.body.appendChild(banner);
-  confetti(60);
-  // Musique/son
-  try{
-    const ctx = new AudioContext();
-    const notes = [523,659,784,1047,784,1047,1319];
-    notes.forEach((freq,i)=>{
-      const o=ctx.createOscillator(); const g=ctx.createGain();
-      o.connect(g); g.connect(ctx.destination);
-      o.frequency.value=freq; o.type='sine';
-      g.gain.setValueAtTime(.3,ctx.currentTime+i*.18);
-      g.gain.exponentialRampToValueAtTime(.01,ctx.currentTime+i*.18+.3);
-      o.start(ctx.currentTime+i*.18); o.stop(ctx.currentTime+i*.18+.3);
-    });
-  }catch(e){}
+function updateStats(){
+  const now=new Date();
+  const ym=now.getFullYear()+'-'+String(now.getMonth()+1).padStart(2,'0');
+  const evMonth=S.events.filter(e=>{if(!e.date)return false;if(e.date.startsWith(ym))return true;if(e.dateEnd&&e.date<=ym+'-31'&&e.dateEnd>=ym+'-01')return true;return false;});
+  const wStart=new Date(now);const dow=wStart.getDay();
+  wStart.setDate(now.getDate()-(dow===0?6:dow-1));wStart.setHours(0,0,0,0);
+  const wEnd=new Date(wStart);wEnd.setDate(wStart.getDate()+6);wEnd.setHours(23,59,59,999);
+  const evWeek=S.events.filter(e=>{if(!e.date)return false;const d=new Date(e.date+'T00:00:00');return d>=wStart&&d<=wEnd;});
+  const byDay={};S.events.forEach(e=>{if(e.date)(byDay[e.date]=byDay[e.date]||[]).push(e);});
+  let conflicts=0;Object.values(byDay).forEach(evs=>{if(evs.length<2)return;const mems=new Set(evs.flatMap(e=>e.memberIds||[]));mems.forEach(m=>{if(evs.filter(e=>(e.memberIds||[]).includes(m)).length>1)conflicts++;});});
+  function set(id,v){const el=document.getElementById(id);if(el)el.textContent=v;}
+  set('statMonth',evMonth.length);set('statMonthSub',evMonth.length===1?'événement 🎉':'événements 🎉');
+  set('statWeek',evWeek.length);set('statWeekSub',evWeek.length>0?evWeek.length+' prévu'+(evWeek.length>1?'s':''):'Rien de prévu');
+  set('statProjects',S.projects.length);set('statProjectsSub',S.projects.length>0?'en cours 🚀':'À créer !');
+  set('statConflicts',conflicts);set('statConflictsSub',conflicts===0?'Tout va bien 😊':conflicts+' à régler ⚠️');
+  set('agendaBadge',S.events.filter(e=>e.date>=now.toISOString().slice(0,10)).length);
 }
 
-function closeBday(){
-  const b=document.getElementById('bdayBanner');
-  if(b){ b.style.animation='fadeOut .3s forwards'; setTimeout(()=>b.remove(),300); }
+// ═══════════════════════════════════════════════════════════════
+// SIDEBAR + NAV
+// ═══════════════════════════════════════════════════════════════
+function renderSidebar(){
+  const el=document.getElementById('sideMembers'); if(!el) return;
+  el.innerHTML=S.members.map(m=>{const isMe=m.id===_me;return`<div class="mem-item" onclick="setMe(${m.id})"><div class="mem-av" style="background:${m.color};${isMe?'box-shadow:0 0 0 2px white,0 0 0 4px '+m.color:''}">${m.photo?`<img src="${m.photo}">`:(m.name[0]||'?')}</div><div><div class="mem-name">${m.name}${isMe?' ✅':''}</div><div class="mem-role">${m.role}</div></div></div>`;}).join('');
 }
+function setMe(id){_me=id;localStorage.setItem('fs_me',id);renderSidebar();renderChat();toast('✅ '+S.members.find(m=>m.id===id)?.name);}
 
-// ═══════════════════════════════════════════════════════════
-// SOUVENIRS
-// ═══════════════════════════════════════════════════════════
-let _memories = JSON.parse(localStorage.getItem('fs_memories')||'[]');
-let _memoryPhotoData = null;
+const SEC_IDS={cal:'secCal',agenda:'secAgenda',chat:'secChat',shop:'secShop',projects:'secProjects',horo:'secHoro',memories:'secMemories'};
+const SEC_TITLES={cal:'📅 Calendrier familial',agenda:'📋 Agenda',chat:'💬 Discussion famille',shop:'🛒 Liste de courses',projects:'🎯 Projets & Sorties',horo:'⭐ Horoscope familial',memories:'📸 Nos Souvenirs'};
 
-function renderMemories(){
-  const el = document.getElementById('memoriesGrid');
-  if(!el) return;
-  const sorted = [..._memories].sort((a,b)=>b.date.localeCompare(a.date));
-  el.innerHTML = `<div class="memory-card memory-add" onclick="openAddMemory()"><div style="font-size:36px;">📸</div><div>Ajouter</div></div>`
-    + sorted.map((m,i)=>`
-    <div class="memory-card" onclick="viewMemory(${i})" style="background:${['#FF6B6B','#4ECDC4','#A78BFA','#FFD700'][i%4]}22;">
-      ${m.photo ? `<img src="${m.photo}">` : `<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:48px;">📷</div>`}
-      <div class="memory-label">
-        <div>${m.title}</div>
-        <div class="memory-date">${new Date(m.date+'T00:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</div>
-      </div>
-    </div>`).join('');
-}
-
-function openAddMemory(){
-  _memoryPhotoData=null;
-  document.getElementById('memoryTitle').value='';
-  document.getElementById('memoryDate').value=new Date().toISOString().slice(0,10);
-  document.getElementById('memoryPreview').style.display='none';
-  openModal('memoryModal');
-}
-
-function loadMemoryPhoto(input){
-  const f=input.files[0]; if(!f) return;
-  const r=new FileReader();
-  r.onload=e=>{
-    _memoryPhotoData=e.target.result;
-    document.getElementById('memoryPreviewImg').src=_memoryPhotoData;
-    document.getElementById('memoryPreview').style.display='block';
-  };
-  r.readAsDataURL(f);
-}
-
-function saveMemory(){
-  const title=document.getElementById('memoryTitle').value.trim();
-  const date=document.getElementById('memoryDate').value;
-  if(!title){ toast('⚠️ Titre obligatoire !'); return; }
-  _memories.unshift({title,date,photo:_memoryPhotoData||null,id:Date.now()});
-  localStorage.setItem('fs_memories',JSON.stringify(_memories));
-  closeModal('memoryModal');
-  renderMemories();
-  toast('📸 Souvenir ajouté !');
-  confetti(25);
-}
-
-function viewMemory(idx){
-  const m=_memories[idx]; if(!m) return;
-  const d=new Date(m.date+'T00:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  const overlay=document.createElement('div');
-  overlay.className='bday-banner';
-  overlay.style.cssText='cursor:pointer;';
-  overlay.onclick=()=>overlay.remove();
-  overlay.innerHTML=`<div style="background:var(--white);border-radius:28px;max-width:420px;width:90vw;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4);">
-    ${m.photo?`<img src="${m.photo}" style="width:100%;max-height:280px;object-fit:cover;">`:''}
-    <div style="padding:20px;">
-      <div style="font-family:'Baloo 2',sans-serif;font-size:20px;font-weight:800;margin-bottom:4px;">${m.title}</div>
-      <div style="font-size:13px;color:rgba(45,43,85,.5);">📅 ${d}</div>
-      <button onclick="deleteMemory(${idx},event)" style="margin-top:12px;padding:6px 14px;border-radius:10px;border:2px solid var(--coral);background:none;color:var(--coral);font-size:12px;font-weight:700;cursor:pointer;">🗑️ Supprimer</button>
-    </div>
-  </div>`;
-  document.body.appendChild(overlay);
-}
-
-function deleteMemory(idx,e){
-  e.stopPropagation();
-  if(!confirm('Supprimer ce souvenir ?')) return;
-  _memories.splice(idx,1);
-  localStorage.setItem('fs_memories',JSON.stringify(_memories));
-  document.querySelector('.bday-banner')?.remove();
-  renderMemories();
-  toast('🗑️ Souvenir supprimé');
-}
-
-// ═══════════════════════════════════════════════════════════
-// MOT DOUX SECRET
-// ═══════════════════════════════════════════════════════════
-let _secretForId = null;
-let _secretFromId = null;
-
-function openSecret(){
-  _secretForId=null; _secretFromId=getMe()?.id||null;
-  document.getElementById('secretText').value='';
-  renderSecretPickers();
-  openModal('secretModal');
+function setNav(el,section){
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  el.classList.add('active');
+  _showSection(section);
   if(document.getElementById('mobileSidebar')?.classList.contains('open')) toggleSidebar();
 }
-
-function renderSecretPickers(){
-  renderSecretPicker('secretForPicker','for');
-  renderSecretPicker('secretFromPicker','from');
+function mobileNav(el,section){
+  document.querySelectorAll('.bottom-nav-item').forEach(b=>b.classList.remove('active'));
+  el.classList.add('active');
+  _showSection(section);
+  window.scrollTo(0,0);
+}
+function _showSection(section){
+  _currentSection=section;
+  Object.entries(SEC_IDS).forEach(([k,id])=>{const s=document.getElementById(id);if(s)s.style.display=k===section?'':'none';});
+  const pt=document.getElementById('pageTitle');if(pt)pt.textContent=SEC_TITLES[section]||'';
+  const vs=document.getElementById('viewSw');if(vs)vs.style.display=section==='cal'?'flex':'none';
+  if(section==='shop') renderShop();
+  if(section==='horo') renderHoro();
+  if(section==='chat') renderChatFull();
+  if(section==='projects') renderProjects();
+  if(section==='agenda') renderAgenda();
+  if(section==='memories') renderMemories();
 }
 
-function renderSecretPicker(elId, role){
-  const el=document.getElementById(elId); if(!el) return;
-  const selected = role==='for' ? _secretForId : _secretFromId;
-  el.innerHTML=S.members.map(m=>{
-    const sel=m.id===selected;
-    return `<button class="mpick-btn ${sel?'selected':''}" onclick="${role==='for'?'_secretForId':'_secretFromId'}=${m.id};renderSecretPickers();" style="${sel?'border-color:'+m.color+';color:'+m.color+';background:'+m.color+'15;':''}">${m.name}</button>`;
+function toggleSidebar(){
+  const sb=document.getElementById('mobileSidebar');
+  const closeBtn=sb?.querySelector('.ham-close');
+  sb?.classList.toggle('open');
+  if(closeBtn) closeBtn.style.display=sb?.classList.contains('open')?'flex':'none';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// WIDGET DU JOUR + MÉTÉO
+// ═══════════════════════════════════════════════════════════════
+function renderWidget(){
+  const now=new Date();
+  const el_num=document.getElementById('dwNum');const el_lbl=document.getElementById('dwLabel');
+  if(el_num) el_num.textContent=now.getDate();
+  if(el_lbl) el_lbl.textContent=DAYS_FR[(now.getDay()+6)%7]+' '+MONTHS[now.getMonth()];
+  const todayStr=now.toISOString().slice(0,10);
+  const evts=S.events.filter(e=>e.date===todayStr||(e.dateEnd&&todayStr>=e.date&&todayStr<=e.dateEnd));
+  const el_evts=document.getElementById('dwEvents');
+  if(el_evts) el_evts.innerHTML=evts.length?evts.map(e=>{const cat=CATS.find(c=>c.k===e.cat)||CATS[0];return`<div class="dw-evt-item"><span style="background:${cat.c}22;color:${cat.c};padding:2px 6px;border-radius:8px;font-size:11px;">${cat.e} ${cat.l}</span><span>${e.title}${e.time?' · '+e.time:''}</span></div>`;}).join(''):'<div style="font-size:13px;color:rgba(45,43,85,.4);padding:4px 0;">Journée libre ! 🎉</div>';
+}
+
+async function fetchWeather(){
+  const el=document.getElementById('weatherBox'); if(!el) return;
+  try{
+    let lat=50.85,lon=4.35;
+    try{const pos=await new Promise((res,rej)=>navigator.geolocation.getCurrentPosition(res,rej,{timeout:5000}));lat=pos.coords.latitude;lon=pos.coords.longitude;}catch(g){}
+    const r=await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current_weather=true&hourly=apparent_temperature,precipitation_probability&timezone=auto&forecast_days=1`);
+    const d=await r.json();const w=d.current_weather;
+    const temp=Math.round(w.temperature);const wind=Math.round(w.windspeed);
+    const codes={0:'☀️ Dégagé',1:'🌤️ Peu nuageux',2:'⛅ Nuageux',3:'☁️ Couvert',45:'🌫️ Brouillard',61:'🌧️ Pluie légère',63:'🌧️ Pluie',71:'🌨️ Neige',80:'🌦️ Averses',95:'⛈️ Orages'};
+    const ck=Object.keys(codes).reverse().find(k=>w.weathercode>=parseInt(k))||'0';
+    const[wE,wD]=(codes[ck]||'🌡️ Variable').split(' ');
+    const hrIdx=new Date().getHours();
+    const feel=d.hourly?.apparent_temperature?.[hrIdx]!=null?Math.round(d.hourly.apparent_temperature[hrIdx]):null;
+    const rain=d.hourly?.precipitation_probability?.[hrIdx]??null;
+    el.innerHTML=`<span style="font-size:36px;">${wE}</span><div style="flex:1;"><div style="font-family:'Baloo 2',sans-serif;font-size:26px;font-weight:800;color:white;line-height:1;">${temp}°C${feel!=null?` <span style="font-size:12px;opacity:.6;">res. ${feel}°</span>`:''}</div><div style="font-size:13px;font-weight:700;color:rgba(255,255,255,.85);">${wD}</div><div style="font-size:11px;color:rgba(255,255,255,.5);">💨 ${wind}km/h${rain!=null?' · 🌂 '+rain+'%':''}</div></div>`;
+  }catch(err){el.innerHTML=`<span style="font-size:22px;">📍</span><div style="font-size:12px;color:rgba(255,255,255,.6);font-weight:600;">Météo indisponible</div>`;}
+}
+
+function renderFunMsg(){const msgs=Object.entries(FUN_MSGS).map(([k,v])=>[parseInt(k),v]).sort((a,b)=>b[0]-a[0]);const h=new Date().getHours();const[,arr]=msgs.find(([k])=>h>=k)||msgs[msgs.length-1];const el=document.getElementById('funMsg');if(el)el.textContent=arr[_funIdx%arr.length];}
+function nextFunMsg(){_funIdx++;renderFunMsg();}
+function renderJoke(){const el=document.getElementById('sideJoke');if(el)el.innerHTML=`😄 <em>${JOKES[_jokeIdx]}</em><br><small style="opacity:.5;font-size:10px;">Cliquez pour une autre</small>`;}
+function nextJoke(){_jokeIdx=(_jokeIdx+1)%JOKES.length;localStorage.setItem('fs_joke',_jokeIdx);renderJoke();}
+
+// ═══════════════════════════════════════════════════════════════
+// CALENDRIER
+// ═══════════════════════════════════════════════════════════════
+function renderCalendar(){
+  const el=document.getElementById('calDays');const titleEl=document.getElementById('calTitle');if(!el)return;
+  if(titleEl)titleEl.textContent=MONTHS[S.month]+' '+S.year+' 📅';
+  const today=new Date();const todayStr=today.toISOString().slice(0,10);
+  const first=new Date(S.year,S.month,1);const dow=(first.getDay()+6)%7;
+  const dim=new Date(S.year,S.month+1,0).getDate();const dip=new Date(S.year,S.month,0).getDate();
+  let html='';
+  for(let i=dow-1;i>=0;i--) html+=`<div class="cal-day other-month"><div class="day-num">${dip-i}</div></div>`;
+  for(let d=1;d<=dim;d++){
+    const dt=`${S.year}-${String(S.month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const isToday=dt===todayStr;
+    const evts=S.events.filter(e=>e.date===dt||(e.dateEnd&&dt>=e.date&&dt<=e.dateEnd));
+    const pills=evts.slice(0,3).map(e=>{const cat=CATS.find(c=>c.k===e.cat)||CATS[0];return`<div class="evt-pill" style="background:${cat.c}22;color:${cat.c};" onclick="event.stopPropagation();openEditEvent(${e.id})">${cat.e} ${e.title}</div>`;}).join('');
+    html+=`<div class="cal-day${isToday?' today':''}" onclick="dayClick('${dt}')"><div class="day-num">${d}</div>${pills}</div>`;
+  }
+  el.innerHTML=html;
+}
+function prevMonth(){S.month--;if(S.month<0){S.month=11;S.year--;}renderCalendar();}
+function nextMonth(){S.month++;if(S.month>11){S.month=0;S.year++;}renderCalendar();}
+function goToday(){const t=new Date();S.month=t.getMonth();S.year=t.getFullYear();renderCalendar();}
+function dayClick(dt){openAddEvent(dt);}
+function setView(v,el){document.querySelectorAll('.vbtn').forEach(b=>b.classList.remove('active'));el.classList.add('active');}
+
+// ═══════════════════════════════════════════════════════════════
+// EVENTS
+// ═══════════════════════════════════════════════════════════════
+function renderEvents(){
+  const el=document.getElementById('eventsList'); if(!el) return;
+  const today=new Date().toISOString().slice(0,10);
+  const upcoming=[...S.events].filter(e=>e.date>=today).sort((a,b)=>a.date.localeCompare(b.date)).slice(0,20);
+  if(!upcoming.length){el.innerHTML='<div style="text-align:center;padding:24px;color:rgba(45,43,85,.35);font-size:13px;">Aucun événement à venir 🎉</div>';return;}
+  el.innerHTML=upcoming.map(e=>{
+    const cat=CATS.find(c=>c.k===e.cat)||CATS[0];
+    const mems=(e.memberIds||[]).map(id=>S.members.find(m=>m.id===id)).filter(Boolean);
+    const avs=mems.map(m=>`<div class="evt-av" style="background:${m.color};">${m.photo?`<img src="${m.photo}">`:(m.name[0]||'?')}</div>`).join('');
+    const d=new Date(e.date+'T00:00:00').toLocaleDateString('fr-FR',{weekday:'short',day:'numeric',month:'short'});
+    return`<div class="evt-card" style="border-color:${cat.c};background:${cat.c}11;" onclick="openEditEvent(${e.id})"><div class="evt-title">${cat.e} ${e.title}</div><div class="evt-meta">${d}${e.time?' · '+e.time:''}${e.location?' · 📍'+e.location:''}</div>${avs?`<div class="evt-avs">${avs}</div>`:''}</div>`;
   }).join('');
 }
 
-async function saveSecret(){
-  if(!_secretForId){ toast('⚠️ Choisis le destinataire !'); return; }
-  const txt=document.getElementById('secretText').value.trim();
-  if(!txt){ toast('⚠️ Écris un message !'); return; }
-  const from=S.members.find(m=>m.id===_secretFromId);
-  // Stocker dans localStorage avec clé par destinataire
-  const key='fs_secret_'+_secretForId;
-  const secrets=JSON.parse(localStorage.getItem(key)||'[]');
-  secrets.push({text:txt, from:from?.name||'Quelqu\'un', ts:Date.now()});
-  localStorage.setItem(key,JSON.stringify(secrets));
-  closeModal('secretModal');
-  toast('💌 Message secret envoyé !');
-  confetti(20);
+function renderAgenda(){
+  const el=document.getElementById('agendaList'); if(!el) return;
+  const sorted=[...S.events].sort((a,b)=>a.date.localeCompare(b.date));
+  if(!sorted.length){el.innerHTML='<div style="text-align:center;padding:24px;color:rgba(45,43,85,.35);">Aucun événement 📅</div>';return;}
+  el.innerHTML=sorted.map(e=>{const cat=CATS.find(c=>c.k===e.cat)||CATS[0];const d=new Date(e.date+'T00:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});return`<div class="evt-card" style="border-color:${cat.c};background:${cat.c}11;" onclick="openEditEvent(${e.id})"><div class="evt-title">${cat.e} ${e.title}</div><div class="evt-meta">${d}${e.time?' · '+e.time:''}</div></div>`;}).join('');
 }
 
-function checkSecrets(){
-  const me=getMe(); if(!me) return;
-  const key='fs_secret_'+me.id;
-  const secrets=JSON.parse(localStorage.getItem(key)||'[]');
-  if(!secrets.length) return;
-  // Montrer le plus récent non lu
-  const shown=JSON.parse(localStorage.getItem('fs_secrets_shown')||'[]');
-  const unread=secrets.filter(s=>!shown.includes(s.ts));
-  if(!unread.length) return;
-  const s=unread[0];
-  shown.push(s.ts);
-  localStorage.setItem('fs_secrets_shown',JSON.stringify(shown));
-  setTimeout(()=>showSecret(s), 1500);
+// ═══════════════════════════════════════════════════════════════
+// CHAT
+// ═══════════════════════════════════════════════════════════════
+function renderChatWho(containerId){
+  const el=document.getElementById(containerId); if(!el||!S.members.length) return;
+  if(!S.chatMemberId) S.chatMemberId=(getMe()||S.members[0]).id;
+  el.innerHTML=S.members.map(m=>{const sel=m.id===S.chatMemberId;const av=m.photo?`<img src="${m.photo}" style="width:20px;height:20px;border-radius:50%;object-fit:cover;">`:`<span style="font-size:11px;font-weight:800;color:white;">${m.name[0]}</span>`;return`<button class="who-btn ${sel?'active':''}" onclick="setChatMember(${m.id})" style="${sel?'border-color:'+m.color+';color:'+m.color+';background:'+m.color+'15;':''}"><div style="width:20px;height:20px;border-radius:50%;background:${m.color};display:flex;align-items:center;justify-content:center;overflow:hidden;flex-shrink:0;">${av}</div>${m.name}</button>`;}).join('');
+}
+function setChatMember(id){S.chatMemberId=id;renderChat();renderChatFull();}
+
+function buildChatHTML(){
+  const me=getMe();
+  return S.chats.map(msg=>{
+    const m=S.members.find(x=>x.id===msg.memberId); if(!m) return '';
+    const own=me&&msg.memberId===me.id;
+    const t=new Date(msg.ts).toLocaleTimeString('fr-FR',{hour:'2-digit',minute:'2-digit'});
+    const isImg=msg.text&&msg.text.startsWith('[IMG]');
+    const content=isImg?`<img src="${msg.text.slice(5)}" style="max-width:180px;border-radius:10px;" onclick="window.open(this.src)">`:(msg.text||'');
+    const av=m.photo?`<img src="${m.photo}">`:(m.name[0]||'?');
+    return`<div class="chat-msg ${own?'own':''}"><div class="chat-av-sm" style="background:${m.color};">${av}</div><div class="chat-bubble-wrap">${!own?`<div class="chat-who-name">${m.name}</div>`:''}<div class="chat-bubble">${content}</div><div class="chat-time">${t}</div></div></div>`;
+  }).join('');
 }
 
-function showSecret(secret){
-  const overlay=document.createElement('div');
-  overlay.className='secret-overlay';
-  overlay.id='secretOverlay';
-  overlay.innerHTML=`<div class="secret-card">
-    <div class="secret-envelope">💌</div>
-    <div style="font-size:13px;color:rgba(255,255,255,.5);margin:8px 0 4px;">Un message rien que pour toi… ✨</div>
-    <div class="secret-msg">"${secret.text}"</div>
-    <div class="secret-from">— avec amour, ${secret.from} 💕</div>
-    <button onclick="document.getElementById('secretOverlay').remove();confetti(30);" style="padding:12px 28px;border-radius:20px;border:none;background:white;color:#764ba2;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;">🥰 Merci !</button>
-  </div>`;
-  document.body.appendChild(overlay);
+function renderChat(){
+  const el=document.getElementById('chatMsgs');const who=document.getElementById('chatWho');
+  if(el){el.innerHTML=buildChatHTML();el.scrollTop=el.scrollHeight;}
+  if(who) renderChatWho('chatWho');
+}
+function renderChatFull(){
+  const el=document.getElementById('chatMsgsFull');const who=document.getElementById('chatWhoFull');
+  if(el){el.innerHTML=buildChatHTML();el.scrollTop=el.scrollHeight;}
+  if(who) renderChatWho('chatWhoFull');
 }
 
+async function sendMsg(){
+  const inputEl=document.getElementById(_currentSection==='chat'?'chatInputFull':'chatInput'); if(!inputEl) return;
+  const t=inputEl.value.trim(); if(!t){toast('⚠️ Écris un message !');return;}
+  if(!S.members.length){toast("⚠️ Ajoute d'abord un membre !");return;}
+  const me=S.chatMemberId||getMe()?.id; if(!me){toast('⚠️ Qui envoie ?');return;}
+  inputEl.value='';
+  const {error}=await sb.from('chats').insert({member_id:me,text:t,ts:Date.now()});
+  if(error){toast('⚠️ Erreur envoi');return;}
+  await dbLoad();
+}
 
+async function sendPhoto(input){
+  const file=input.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=async function(e){
+    const me=S.chatMemberId||getMe()?.id; if(!me){toast('⚠️ Sélectionne ton profil !');return;}
+    await sb.from('chats').insert({member_id:me,text:'[IMG]'+e.target.result,ts:Date.now()});
+    await dbLoad();
+  };
+  reader.readAsDataURL(file);
+}
 
-// ═══════════════════════════════════════════════════════════
-// GESTION DES MEMBRES
-// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════════
+// COURSES
+// ═══════════════════════════════════════════════════════════════
+function renderShop(){
+  const el=document.getElementById('shopList');const bar=document.getElementById('shopBar');const cnt=document.getElementById('shopCount');
+  if(!el) return;
+  const items=S.shopItems||[];const done=items.filter(i=>i.done).length;const total=items.length;
+  if(bar) bar.style.width=(total?Math.round(done/total*100):0)+'%';
+  if(cnt) cnt.textContent=total?`${done}/${total} achetés`:'';
+  if(!total){el.innerHTML='<div style="text-align:center;padding:30px;color:rgba(45,43,85,.35);font-size:13px;">🛒 La liste est vide !<br>Ajoutez vos articles ci-dessus</div>';return;}
+  const groups={};items.forEach(i=>{const k=i.emoji||'🛒';if(!groups[k])groups[k]=[];groups[k].push(i);});
+  el.innerHTML=Object.entries(groups).map(([emoji,gitems])=>`<div class="shop-cat-label">${emoji} ${gitems[0].category||''}</div>`+gitems.map(item=>`<div class="shop-item ${item.done?'done':''}" onclick="toggleItem(${item.id})"><div class="shop-check">${item.done?'✓':''}</div><span class="shop-item-name">${item.name}</span><button class="shop-del-btn" onclick="event.stopPropagation();delItem(${item.id})">×</button></div>`).join('')).join('');
+}
+
+async function addItem(){
+  const inp=document.getElementById('shopInput');const name=inp.value.trim();
+  if(!name){toast('⚠️ Écris un article !');return;}
+  const sel=document.getElementById('shopCat');const emoji=sel.value;const cat=sel.options[sel.selectedIndex].text.split(' ').slice(1).join(' ');
+  inp.value='';
+  const {error}=await sb.from('shopping').insert({name,emoji,category:cat,done:false,member_id:getMe()?.id||null,created_at:String(Date.now())});
+  if(error){toast('⚠️ Erreur: '+error.message);return;}
+  toast('🛒 '+name+' ajouté !');confetti(15);await dbLoad();
+}
+
+async function toggleItem(id){
+  const item=S.shopItems.find(i=>i.id===id); if(!item) return;
+  await sb.from('shopping').update({done:!item.done}).eq('id',id);
+  if(!item.done){toast('✅ Acheté !');confetti(20);}
+  await dbLoad();
+}
+
+async function delItem(id){await sb.from('shopping').delete().eq('id',id);toast('🗑️ Supprimé');await dbLoad();}
+
+// ═══════════════════════════════════════════════════════════════
+// PROJETS
+// ═══════════════════════════════════════════════════════════════
+function renderProjects(){
+  const el=document.getElementById('projectsList'); if(!el) return;
+  if(!S.projects.length){el.innerHTML='<div style="text-align:center;padding:40px;color:rgba(45,43,85,.35);">Aucun projet 🎯<br>Crée votre premier projet !</div>';return;}
+  el.innerHTML=S.projects.map(p=>{
+    const mems=(p.memberIds||[]).map(id=>S.members.find(m=>m.id===id)).filter(Boolean);
+    const d=p.date?new Date(p.date+'T00:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long'}):'À définir';
+    return`<div class="project-card card"><div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;"><div style="font-size:32px;">${p.emoji}</div><div style="flex:1;"><div style="font-size:16px;font-weight:800;">${p.name}</div><div style="font-size:12px;color:rgba(45,43,85,.5);">${d}${p.budget?' · 💶 '+p.budget+'€':''}</div>${p.desc?`<div style="font-size:12px;color:rgba(45,43,85,.5);margin-top:2px;">${p.desc}</div>`:''}</div><div style="display:flex;gap:3px;">${mems.map(m=>`<div class="evt-av" style="background:${m.color};">${m.photo?`<img src="${m.photo}">`:(m.name[0]||'?')}</div>`).join('')}</div></div><div style="display:flex;align-items:center;gap:8px;font-size:11px;color:rgba(45,43,85,.4);"><span>${p.progress}%</span><div style="flex:1;height:6px;background:rgba(45,43,85,.1);border-radius:3px;"><div style="height:100%;width:${p.progress}%;background:linear-gradient(90deg,var(--teal),var(--lime));border-radius:3px;"></div></div><span>complété</span></div></div>`;
+  }).join('');
+}
+
+async function saveProject(){
+  const name=document.getElementById('projName').value.trim(); if(!name){toast('⚠️ Nom obligatoire !');return;}
+  const {error}=await sb.from('projects').insert({name,emoji:'🎯',description:document.getElementById('projDesc').value,date:document.getElementById('projDate').value,budget:document.getElementById('projBudget').value,progress:0,member_ids:S.memberIds});
+  if(error){toast('⚠️ Erreur');return;}
+  S.memberIds=[];closeModal('projModal');toast('🚀 Projet créé !');await dbLoad();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ÉVÉNEMENTS MODAL
+// ═══════════════════════════════════════════════════════════════
+function renderCatGrid(){
+  const el=document.getElementById('catGrid'); if(!el) return;
+  el.innerHTML=CATS.map(c=>`<button class="cat-btn${S.cat===c.k?' selected':''}" onclick="S.cat='${c.k}';renderCatGrid();">${c.e}<br>${c.l}</button>`).join('');
+}
+function renderMemPicker(elId){
+  const el=document.getElementById(elId); if(!el) return;
+  el.innerHTML=S.members.map(m=>{const sel=S.memberIds.includes(m.id);return`<button class="mpick-btn${sel?' selected':''}" onclick="toggleMem(${m.id},'${elId}')" style="${sel?'border-color:'+m.color+';color:'+m.color+';background:'+m.color+'15;':''}">${m.name}</button>`;}).join('');
+}
+function toggleMem(id,elId){const i=S.memberIds.indexOf(id);i>=0?S.memberIds.splice(i,1):S.memberIds.push(id);renderMemPicker(elId||'memPicker');}
+
+function setDayMode(mode){
+  S.dayMode=mode;
+  document.getElementById('singleFields').style.display=mode==='single'?'':'none';
+  document.getElementById('multiFields').style.display=mode==='multi'?'':'none';
+  document.getElementById('btnSingle').classList.toggle('active',mode==='single');
+  document.getElementById('btnMulti').classList.toggle('active',mode==='multi');
+}
+
+function openAddEvent(dt=''){
+  S.editEventId=null;S.cat='sport';S.memberIds=[];setDayMode('single');
+  ['evtTitle','evtDate','evtTime','evtTimeEnd','evtLocation','evtNote','evtDateFrom','evtDateTo'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  if(dt){const el=document.getElementById('evtDate');if(el)el.value=dt;}
+  document.getElementById('evtModalTitle').textContent='✨ Nouvel événement';
+  document.getElementById('evtSaveBtn').textContent='💾 Enregistrer';
+  document.getElementById('evtDeleteBtn').style.display='none';
+  renderCatGrid();renderMemPicker('memPicker');openModal('eventModal');
+}
+function openEditEvent(id){
+  const e=S.events.find(x=>x.id===id); if(!e) return;
+  S.editEventId=id;S.cat=e.cat||'sport';S.memberIds=[...(e.memberIds||[])];
+  if(e.dateEnd&&e.dateEnd!==e.date){setDayMode('multi');const a=document.getElementById('evtDateFrom'),b=document.getElementById('evtDateTo');if(a)a.value=e.date;if(b)b.value=e.dateEnd;}
+  else{setDayMode('single');const d=document.getElementById('evtDate'),ti=document.getElementById('evtTime'),te=document.getElementById('evtTimeEnd');if(d)d.value=e.date;if(ti)ti.value=e.time||'';if(te)te.value=e.timeEnd||'';}
+  document.getElementById('evtTitle').value=e.title||'';
+  document.getElementById('evtLocation').value=e.location||'';
+  document.getElementById('evtNote').value=e.note||'';
+  document.getElementById('evtModalTitle').textContent="✏️ Modifier l'événement";
+  document.getElementById('evtSaveBtn').textContent='💾 Modifier';
+  document.getElementById('evtDeleteBtn').style.display='flex';
+  renderCatGrid();renderMemPicker('memPicker');openModal('eventModal');
+}
+
+async function saveEvent(){
+  const title=document.getElementById('evtTitle').value.trim(); if(!title){toast('⚠️ Titre obligatoire !');return;}
+  let date,dateEnd=null;
+  if(S.dayMode==='multi'){date=document.getElementById('evtDateFrom').value;dateEnd=document.getElementById('evtDateTo').value;if(!date||!dateEnd){toast('⚠️ Dates obligatoires !');return;}}
+  else{date=document.getElementById('evtDate').value;if(!date){toast('⚠️ Date obligatoire !');return;}}
+  const row={title,date,date_end:dateEnd,time:document.getElementById('evtTime').value||null,time_end:document.getElementById('evtTimeEnd').value||null,cat:S.cat,member_ids:S.memberIds,location:document.getElementById('evtLocation').value||null,note:document.getElementById('evtNote').value||null};
+  let err;
+  if(S.editEventId){({error:err}=await sb.from('events').update(row).eq('id',S.editEventId));}
+  else{({error:err}=await sb.from('events').insert(row));}
+  if(err){toast('⚠️ Erreur sauvegarde');console.error(err);return;}
+  closeModal('eventModal');toast(S.editEventId?'✅ Modifié !':'🎉 Ajouté !');confetti(25);
+  S.editEventId=null;S.memberIds=[];await dbLoad();
+}
+async function deleteEvent(){
+  if(!S.editEventId) return;
+  const e=S.events.find(x=>x.id===S.editEventId);
+  if(!confirm('Supprimer "'+e?.title+'" ?')) return;
+  await sb.from('events').delete().eq('id',S.editEventId);
+  closeModal('eventModal');toast('🗑️ Supprimé');S.editEventId=null;await dbLoad();
+}
+
+// QUICKBAR
+function renderQbMembers(){
+  const el=document.getElementById('qbMembers'); if(!el) return;
+  el.innerHTML=S.members.map(m=>{const sel=S.memberIds.includes(m.id);const av=m.photo?`<img src="${m.photo}" style="width:100%;height:100%;object-fit:cover;border-radius:50%;">`:(m.name[0]||'?');return`<div onclick="toggleQbMem(${m.id})" style="width:28px;height:28px;border-radius:50%;background:${m.color};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:white;cursor:pointer;overflow:hidden;opacity:${sel?1:.35};border:${sel?'2px solid '+m.color:'2px solid transparent'};transition:all .2s;">${av}</div>`;}).join('');
+}
+function toggleQbMem(id){const i=S.memberIds.indexOf(id);i>=0?S.memberIds.splice(i,1):S.memberIds.push(id);renderQbMembers();}
+async function quickSave(){
+  const title=document.getElementById('qbTitle').value.trim();const date=document.getElementById('qbDate').value;
+  if(!title){toast('⚠️ Titre obligatoire !');return;}if(!date){toast('⚠️ Date obligatoire !');return;}
+  const {error}=await sb.from('events').insert({title,date,cat:document.getElementById('qbCat').value,time:document.getElementById('qbTime').value||null,member_ids:S.memberIds,date_end:null,time_end:null,location:null,note:null});
+  if(error){toast('⚠️ Erreur');return;}
+  document.getElementById('qbTitle').value='';document.getElementById('qbTime').value='';S.memberIds=[];
+  toast('🎉 '+title+' ajouté !');confetti(20);await dbLoad();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// MEMBRES
+// ═══════════════════════════════════════════════════════════════
 function renderFamilyList(){
   const el=document.getElementById('familyList'); if(!el) return;
-  const COLORS_LIST=['#FF6B6B','#4ECDC4','#A78BFA','#F472B6','#82E0A8','#FFB347','#60A5FA','#FFA07A'];
-  el.innerHTML=S.members.map(m=>`
-    <div style="background:${m.color}15;border:2px solid ${m.color}33;border-radius:16px;padding:14px;display:flex;align-items:center;gap:10px;cursor:pointer;min-width:140px;" onclick="openEditMember(${m.id})">
-      <div class="mem-av" style="background:${m.color};width:44px;height:44px;">${m.photo?`<img src="${m.photo}">`:(m.name[0]||'?')}</div>
-      <div><div style="font-weight:800;">${m.name}</div><div style="font-size:12px;color:rgba(45,43,85,.5);">${m.role}</div>
-      ${m.birthTime?`<div style="font-size:10px;color:rgba(45,43,85,.35);">⬆️ Ascendant calculé</div>`:''}</div>
-      <div style="margin-left:auto;font-size:18px;opacity:.4;">✏️</div>
-    </div>`).join('');
+  el.innerHTML=S.members.map(m=>`<div style="background:${m.color}15;border:2px solid ${m.color}33;border-radius:16px;padding:14px;display:flex;align-items:center;gap:10px;cursor:pointer;min-width:140px;" onclick="openEditMember(${m.id})"><div class="mem-av" style="background:${m.color};width:44px;height:44px;">${m.photo?`<img src="${m.photo}">`:(m.name[0]||'?')}</div><div><div style="font-weight:800;">${m.name}</div><div style="font-size:12px;color:rgba(45,43,85,.5);">${m.role}</div>${m.birthTime?'<div style="font-size:10px;color:rgba(45,43,85,.35);">⬆️ Ascendant calculé</div>':''}</div><div style="margin-left:auto;font-size:18px;opacity:.4;">✏️</div></div>`).join('');
 }
-
 function openAddMember(){
-  S.editMemberId=null; S.color=COLORS[0];
+  S.editMemberId=null;S.color=COLORS[0];
   ['memName','memPhoto','memBirthday','memBirthTime','memBirthPlace'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
-  document.getElementById('memRole').value='Enfant';
-  document.getElementById('memIsMe').checked=false;
-  document.getElementById('memDeleteBtn').style.display='none';
-  document.getElementById('memModalTitle').textContent='➕ Nouveau membre';
-  renderColorPicker();
-  openModal('memberModal');
+  document.getElementById('memRole').value='Enfant';document.getElementById('memIsMe').checked=false;
+  document.getElementById('memDeleteBtn').style.display='none';document.getElementById('memModalTitle').textContent='➕ Nouveau membre';
+  renderColorPicker();openModal('memberModal');
 }
-
 function openEditMember(id){
   const m=S.members.find(x=>x.id===id); if(!m) return;
-  S.editMemberId=id; S.color=m.color;
-  document.getElementById('memName').value=m.name||'';
-  document.getElementById('memRole').value=m.role||'Enfant';
-  document.getElementById('memPhoto').value=m.photo||'';
-  document.getElementById('memBirthday').value=m.birthday||'';
-  document.getElementById('memBirthTime').value=m.birthTime||'';
-  document.getElementById('memBirthPlace').value=m.birthPlace||'';
+  S.editMemberId=id;S.color=m.color;
+  document.getElementById('memName').value=m.name||'';document.getElementById('memRole').value=m.role||'Enfant';
+  document.getElementById('memPhoto').value=m.photo||'';document.getElementById('memBirthday').value=m.birthday||'';
+  document.getElementById('memBirthTime').value=m.birthTime||'';document.getElementById('memBirthPlace').value=m.birthPlace||'';
   document.getElementById('memIsMe').checked=m.id===_me;
-  document.getElementById('memDeleteBtn').style.display='flex';
-  document.getElementById('memModalTitle').textContent='✏️ Modifier membre';
-  renderColorPicker();
-  closeModal('membersModal');
-  openModal('memberModal');
+  document.getElementById('memDeleteBtn').style.display='flex';document.getElementById('memModalTitle').textContent='✏️ Modifier membre';
+  renderColorPicker();closeModal('membersModal');openModal('memberModal');
 }
-
 function renderColorPicker(){
   const el=document.getElementById('colorPicker'); if(!el) return;
   el.innerHTML=COLORS.map(c=>`<div onclick="S.color='${c}';renderColorPicker();" style="width:28px;height:28px;border-radius:50%;background:${c};cursor:pointer;border:${S.color===c?'3px solid var(--dark)':'3px solid transparent'};transition:all .2s;"></div>`).join('');
 }
-
-function loadPhoto(input){
-  const f=input.files[0]; if(!f) return;
-  const r=new FileReader();
-  r.onload=e=>{ document.getElementById('memPhoto').value=e.target.result; };
-  r.readAsDataURL(f);
-}
-
+function loadPhoto(input){const f=input.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{document.getElementById('memPhoto').value=e.target.result;};r.readAsDataURL(f);}
 async function saveMember(){
-  const name=document.getElementById('memName').value.trim();
-  if(!name){toast('⚠️ Nom obligatoire !');return;}
-  const row={
-    name, role:document.getElementById('memRole').value,
-    color:S.color,
-    photo:document.getElementById('memPhoto').value||null,
-    birthday:document.getElementById('memBirthday').value||null,
-    birth_time:document.getElementById('memBirthTime').value||null,
-    birth_place:document.getElementById('memBirthPlace').value||null,
-  };
-  let err, newId=S.editMemberId;
-  if(S.editMemberId){
-    ({error:err}=await sb.from('members').update(row).eq('id',S.editMemberId));
-  } else {
-    const {data,error}=await sb.from('members').insert(row).select();
-    err=error; if(data&&data[0]) newId=data[0].id;
-  }
+  const name=document.getElementById('memName').value.trim(); if(!name){toast('⚠️ Nom obligatoire !');return;}
+  const row={name,role:document.getElementById('memRole').value,color:S.color,photo:document.getElementById('memPhoto').value||null,birthday:document.getElementById('memBirthday').value||null,birth_time:document.getElementById('memBirthTime').value||null,birth_place:document.getElementById('memBirthPlace').value||null};
+  let err,newId=S.editMemberId;
+  if(S.editMemberId){({error:err}=await sb.from('members').update(row).eq('id',S.editMemberId));}
+  else{const {data,error}=await sb.from('members').insert(row).select();err=error;if(data&&data[0])newId=data[0].id;}
   if(err){toast('⚠️ Erreur: '+err.message);console.error(err);return;}
-  if(document.getElementById('memIsMe').checked&&newId){ _me=newId; localStorage.setItem('fs_me',newId); }
-  closeModal('memberModal');
-  toast(S.editMemberId?'✅ Modifié !':'✨ Membre ajouté !');
-  S.editMemberId=null;
-  await dbLoad();
-  renderFamilyList();
+  if(document.getElementById('memIsMe').checked&&newId){_me=newId;localStorage.setItem('fs_me',newId);}
+  closeModal('memberModal');toast(S.editMemberId?'✅ Modifié !':'✨ Membre ajouté !');S.editMemberId=null;
+  await dbLoad();renderFamilyList();
 }
-
 async function deleteMember(){
   if(!S.editMemberId) return;
   const m=S.members.find(x=>x.id===S.editMemberId);
   if(!confirm('Supprimer '+m?.name+' ?')) return;
   await sb.from('members').delete().eq('id',S.editMemberId);
-  closeModal('memberModal');
-  toast('🗑️ Supprimé');
-  S.editMemberId=null;
-  await dbLoad();
+  closeModal('memberModal');toast('🗑️ Supprimé');S.editMemberId=null;await dbLoad();
 }
 
+// ═══════════════════════════════════════════════════════════════
+// ANNIVERSAIRES
+// ═══════════════════════════════════════════════════════════════
+const BDAY_MSGS=["C'est ton grand jour ! Toute la famille t'aime énormément ! 🎉","Joyeux anniversaire ! Que cette journée soit aussi extraordinaire que toi ! 🌟","Une année de plus, encore plus de bonheur à venir ! 🎂","Le jour le plus spécial de l'année est arrivé ! Profites-en à fond ! 🥳"];
+
+function checkBirthdays(){
+  const today=new Date();const mm=String(today.getMonth()+1).padStart(2,'0');const dd=String(today.getDate()).padStart(2,'0');const todayMD=mm+'-'+dd;
+  const bdayKey='fs_bday_shown_'+today.getFullYear();const shown=JSON.parse(localStorage.getItem(bdayKey)||'[]');
+  S.members.forEach(m=>{
+    if(!m.birthday) return;
+    if(m.birthday.slice(5)!==todayMD) return;
+    if(shown.includes(m.id)) return;
+    shown.push(m.id);localStorage.setItem(bdayKey,JSON.stringify(shown));
+    setTimeout(()=>showBdayBanner(m),800);
+  });
+}
+
+function showBdayBanner(member){
+  const age=member.birthday?new Date().getFullYear()-parseInt(member.birthday.slice(0,4)):null;
+  const msg=BDAY_MSGS[Math.floor(Math.random()*BDAY_MSGS.length)];
+  const av=member.photo?`<img src="${member.photo}" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:4px solid white;margin-bottom:12px;">`:`<div style="width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 12px;">${member.name[0]}</div>`;
+  const banner=document.createElement('div');banner.className='bday-banner';banner.id='bdayBanner';
+  banner.innerHTML=`<div class="bday-card">${av}<div style="font-size:48px;margin-bottom:8px;" class="bday-emoji">🎂</div><div class="bday-name">Joyeux anniversaire ${member.name} ! 🎉</div>${age?`<div style="font-size:22px;color:rgba(255,255,255,.85);font-weight:700;margin:4px 0;">${age} ans aujourd'hui !</div>`:''}<div class="bday-msg">${msg}</div><button class="bday-close" onclick="closeBday()">🎊 Merci !</button></div>`;
+  document.body.appendChild(banner);confetti(60);
+  try{const ctx=new AudioContext();[523,659,784,1047,784,1047,1319].forEach((freq,i)=>{const o=ctx.createOscillator();const g=ctx.createGain();o.connect(g);g.connect(ctx.destination);o.frequency.value=freq;o.type='sine';g.gain.setValueAtTime(.3,ctx.currentTime+i*.18);g.gain.exponentialRampToValueAtTime(.01,ctx.currentTime+i*.18+.3);o.start(ctx.currentTime+i*.18);o.stop(ctx.currentTime+i*.18+.3);});}catch(e){}
+}
+function closeBday(){const b=document.getElementById('bdayBanner');if(b){b.style.animation='fadeOut .3s forwards';setTimeout(()=>b.remove(),300);}}
+
+// ═══════════════════════════════════════════════════════════════
+// SOUVENIRS
+// ═══════════════════════════════════════════════════════════════
+let _memories=JSON.parse(localStorage.getItem('fs_memories')||'[]');
+let _memoryPhotoData=null;
+
+function renderMemories(){
+  const el=document.getElementById('memoriesGrid'); if(!el) return;
+  const sorted=[..._memories].sort((a,b)=>b.date.localeCompare(a.date));
+  el.innerHTML=`<div class="memory-card memory-add" onclick="openAddMemory()"><div style="font-size:36px;">📸</div><div>Ajouter</div></div>`+sorted.map((m,i)=>`<div class="memory-card" onclick="viewMemory(${i})" style="background:${['#FF6B6B','#4ECDC4','#A78BFA','#FFD700'][i%4]}22;">${m.photo?`<img src="${m.photo}">`:'<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:48px;">📷</div>'}<div class="memory-label"><div>${m.title}</div><div class="memory-date">${new Date(m.date+'T00:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</div></div></div>`).join('');
+}
+function openAddMemory(){_memoryPhotoData=null;document.getElementById('memoryTitle').value='';document.getElementById('memoryDate').value=new Date().toISOString().slice(0,10);document.getElementById('memoryPreview').style.display='none';openModal('memoryModal');}
+function loadMemoryPhoto(input){const f=input.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{_memoryPhotoData=e.target.result;document.getElementById('memoryPreviewImg').src=_memoryPhotoData;document.getElementById('memoryPreview').style.display='block';};r.readAsDataURL(f);}
+function saveMemory(){const title=document.getElementById('memoryTitle').value.trim();const date=document.getElementById('memoryDate').value;if(!title){toast('⚠️ Titre obligatoire !');return;}_memories.unshift({title,date,photo:_memoryPhotoData||null,id:Date.now()});localStorage.setItem('fs_memories',JSON.stringify(_memories));closeModal('memoryModal');renderMemories();toast('📸 Souvenir ajouté !');confetti(25);}
+function viewMemory(idx){const m=_memories[idx];if(!m)return;const d=new Date(m.date+'T00:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});const overlay=document.createElement('div');overlay.className='bday-banner';overlay.style.cssText='cursor:pointer;';overlay.onclick=()=>overlay.remove();overlay.innerHTML=`<div style="background:var(--white);border-radius:28px;max-width:420px;width:90vw;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4);">${m.photo?`<img src="${m.photo}" style="width:100%;max-height:280px;object-fit:cover;">`:''}  <div style="padding:20px;"><div style="font-family:'Baloo 2',sans-serif;font-size:20px;font-weight:800;margin-bottom:4px;">${m.title}</div><div style="font-size:13px;color:rgba(45,43,85,.5);">📅 ${d}</div><button onclick="deleteMemory(${idx},event)" style="margin-top:12px;padding:6px 14px;border-radius:10px;border:2px solid var(--coral);background:none;color:var(--coral);font-size:12px;font-weight:700;cursor:pointer;">🗑️ Supprimer</button></div></div>`;document.body.appendChild(overlay);}
+function deleteMemory(idx,e){e.stopPropagation();if(!confirm('Supprimer ce souvenir ?'))return;_memories.splice(idx,1);localStorage.setItem('fs_memories',JSON.stringify(_memories));document.querySelector('.bday-banner')?.remove();renderMemories();toast('🗑️ Souvenir supprimé');}
+
+// ═══════════════════════════════════════════════════════════════
+// MOT DOUX SECRET
+// ═══════════════════════════════════════════════════════════════
+let _secretForId=null,_secretFromId=null;
+function openSecret(){_secretForId=null;_secretFromId=getMe()?.id||null;document.getElementById('secretText').value='';renderSecretPickers();openModal('secretModal');if(document.getElementById('mobileSidebar')?.classList.contains('open'))toggleSidebar();}
+function renderSecretPickers(){renderSecretPicker('secretForPicker','for');renderSecretPicker('secretFromPicker','from');}
+function renderSecretPicker(elId,role){const el=document.getElementById(elId);if(!el)return;const selected=role==='for'?_secretForId:_secretFromId;el.innerHTML=S.members.map(m=>{const sel=m.id===selected;return`<button class="mpick-btn ${sel?'selected':''}" onclick="${role==='for'?'_secretForId':'_secretFromId'}=${m.id};renderSecretPickers();" style="${sel?'border-color:'+m.color+';color:'+m.color+';background:'+m.color+'15;':''}">${m.name}</button>`;}).join('');}
+async function saveSecret(){if(!_secretForId){toast('⚠️ Choisis le destinataire !');return;}const txt=document.getElementById('secretText').value.trim();if(!txt){toast('⚠️ Écris un message !');return;}const from=S.members.find(m=>m.id===_secretFromId);const key='fs_secret_'+_secretForId;const secrets=JSON.parse(localStorage.getItem(key)||'[]');secrets.push({text:txt,from:from?.name||'Quelqu\'un',ts:Date.now()});localStorage.setItem(key,JSON.stringify(secrets));closeModal('secretModal');toast('💌 Message secret envoyé !');confetti(20);}
+function checkSecrets(){const me=getMe();if(!me)return;const key='fs_secret_'+me.id;const secrets=JSON.parse(localStorage.getItem(key)||'[]');if(!secrets.length)return;const shown=JSON.parse(localStorage.getItem('fs_secrets_shown')||'[]');const unread=secrets.filter(s=>!shown.includes(s.ts));if(!unread.length)return;const s=unread[0];shown.push(s.ts);localStorage.setItem('fs_secrets_shown',JSON.stringify(shown));setTimeout(()=>showSecret(s),1500);}
+function showSecret(secret){const overlay=document.createElement('div');overlay.className='secret-overlay';overlay.id='secretOverlay';overlay.innerHTML=`<div class="secret-card"><div class="secret-envelope">💌</div><div style="font-size:13px;color:rgba(255,255,255,.5);margin:8px 0 4px;">Un message rien que pour toi… ✨</div><div class="secret-msg">"${secret.text}"</div><div class="secret-from">— avec amour, ${secret.from} 💕</div><button onclick="document.getElementById('secretOverlay').remove();confetti(30);" style="padding:12px 28px;border-radius:20px;border:none;background:white;color:#764ba2;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;">🥰 Merci !</button></div>`;document.body.appendChild(overlay);}
+
+// ═══════════════════════════════════════════════════════════════
+// DARK MODE
+// ═══════════════════════════════════════════════════════════════
+function applyDark(){const dark=localStorage.getItem('fs_dark')==='1';document.body.classList.toggle('dark',dark);const btn=document.getElementById('darkBtn');if(btn)btn.textContent=dark?'☀️':'🌙';}
+function toggleDark(){const dark=localStorage.getItem('fs_dark')!=='1';localStorage.setItem('fs_dark',dark?'1':'0');applyDark();}
+
+// ═══════════════════════════════════════════════════════════════
+// MODAL + TOAST + CONFETTI
+// ═══════════════════════════════════════════════════════════════
+function openModal(id){const el=document.getElementById(id);if(el){el.classList.add('open');if(id==='membersModal')renderFamilyList();if(id==='eventModal'){renderCatGrid();renderMemPicker('memPicker');}}}
+function closeModal(id){const el=document.getElementById(id);if(el)el.classList.remove('open');}
+document.addEventListener('click',function(e){if(e.target.classList.contains('modal-overlay'))closeModal(e.target.id);});
+let _toastTimer;
+function toast(msg){const el=document.getElementById('toast');if(!el)return;el.textContent=msg;el.classList.add('show');clearTimeout(_toastTimer);_toastTimer=setTimeout(()=>el.classList.remove('show'),3000);}
+function confetti(n=30){const colors=['#FF6B6B','#4ECDC4','#A78BFA','#FFE066','#82E0A8','#F472B6','#60A5FA'];for(let i=0;i<n;i++){const el=document.createElement('div');el.className='confetti-piece';el.style.cssText=`left:${Math.random()*100}vw;top:-10px;background:${colors[i%colors.length]};transform:rotate(${Math.random()*360}deg);`;document.body.appendChild(el);const vy=3+Math.random()*4,vx=(Math.random()-.5)*3;let y=-10,x=parseFloat(el.style.left);const frame=()=>{y+=vy;x+=vx;el.style.top=y+'px';el.style.left=x+'px';el.style.opacity=1-y/window.innerHeight;if(y<window.innerHeight)requestAnimationFrame(frame);else el.remove();};setTimeout(()=>requestAnimationFrame(frame),i*30);}}
+
+// ═══════════════════════════════════════════════════════════════
+// REALTIME
+// ═══════════════════════════════════════════════════════════════
+function setupRealtime(){sb.channel('familia').on('postgres_changes',{event:'*',schema:'public',table:'members'},()=>dbLoad()).on('postgres_changes',{event:'*',schema:'public',table:'events'},()=>dbLoad()).on('postgres_changes',{event:'*',schema:'public',table:'projects'},()=>dbLoad()).on('postgres_changes',{event:'*',schema:'public',table:'chats'},()=>dbLoad()).on('postgres_changes',{event:'*',schema:'public',table:'shopping'},()=>dbLoad()).subscribe();}
+
+// ═══════════════════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════════════════
 async function init(){
-  applyDark();
-  renderJoke();
-  renderFunMsg();
+  applyDark();renderJoke();renderFunMsg();
   document.getElementById('qbDate').value=new Date().toISOString().slice(0,10);
   await dbLoad();
-  setupRealtime();
-  fetchWeather();
-  checkBirthdays();
-  checkSecrets();
+  setupRealtime();fetchWeather();
+  checkBirthdays();checkSecrets();
   setInterval(renderFunMsg,1800000);
 }
 init();
+
 </script>
 </body>
 </html>
