@@ -235,6 +235,48 @@ body.dark .topbar,body.dark .quickbar{background:#1e1b30;}
   .bottom-nav{display:flex;}
   .main{padding-bottom:80px;}
 }
+
+/* ═══ ANNIVERSAIRE ═══ */
+.bday-banner{position:fixed;inset:0;z-index:2000;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,.7);backdrop-filter:blur(6px);animation:fadeIn .5s;}
+.bday-card{background:linear-gradient(135deg,#FF6B6B,#FF8E53,#FFD700);border-radius:32px;padding:36px 40px;text-align:center;max-width:380px;width:90vw;box-shadow:0 20px 60px rgba(255,107,107,.5);animation:bdayPop .6s cubic-bezier(.34,1.56,.64,1);}
+@keyframes bdayPop{0%{transform:scale(.3) rotate(-10deg);opacity:0;}100%{transform:scale(1) rotate(0);opacity:1;}}
+.bday-emoji{font-size:72px;animation:bounce 1s ease-in-out infinite;}
+@keyframes bounce{0%,100%{transform:translateY(0);}50%{transform:translateY(-12px);}}
+.bday-name{font-family:'Baloo 2',sans-serif;font-size:32px;font-weight:800;color:white;text-shadow:0 2px 8px rgba(0,0,0,.2);}
+.bday-msg{font-size:16px;color:rgba(255,255,255,.9);font-weight:700;margin:8px 0 20px;}
+.bday-close{padding:12px 32px;border-radius:20px;border:none;background:white;color:#FF6B6B;font-family:'Nunito',sans-serif;font-size:16px;font-weight:800;cursor:pointer;box-shadow:0 4px 14px rgba(0,0,0,.15);}
+
+
+
+
+
+/* ═══ SOUVENIRS ═══ */
+.memories-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;padding:4px;}
+.memory-card{border-radius:18px;overflow:hidden;position:relative;cursor:pointer;box-shadow:var(--sh);aspect-ratio:1;background:linear-gradient(135deg,var(--coral),var(--peach));}
+.memory-card img{width:100%;height:100%;object-fit:cover;}
+.memory-label{position:absolute;bottom:0;left:0;right:0;padding:8px 10px;background:linear-gradient(0,rgba(0,0,0,.7),transparent);color:white;font-size:12px;font-weight:700;}
+.memory-date{font-size:10px;opacity:.7;}
+.memory-add{border:3px dashed rgba(45,43,85,.2);background:rgba(45,43,85,.03);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:700;color:rgba(45,43,85,.4);cursor:pointer;transition:all .2s;}
+.memory-add:hover{border-color:var(--coral);color:var(--coral);}
+
+/* ═══ MOT DOUX ═══ */
+.secret-overlay{position:fixed;inset:0;z-index:800;display:flex;align-items:center;justify-content:center;background:rgba(45,43,85,.8);backdrop-filter:blur(8px);}
+.secret-card{background:linear-gradient(135deg,#667eea,#764ba2);border-radius:28px;padding:32px;text-align:center;max-width:360px;width:90vw;box-shadow:0 20px 60px rgba(102,126,234,.5);animation:secretPop .5s cubic-bezier(.34,1.56,.64,1);}
+@keyframes secretPop{0%{transform:scale(.5);opacity:0;}100%{transform:scale(1);opacity:1;}}
+.secret-envelope{font-size:64px;animation:wiggle2 2s ease-in-out infinite;}
+@keyframes wiggle2{0%,100%{transform:rotate(-5deg);}50%{transform:rotate(5deg);}}
+.secret-msg{font-size:18px;font-weight:700;color:white;line-height:1.6;margin:16px 0;font-family:'Caveat',cursive;font-size:22px;}
+.secret-from{font-size:13px;color:rgba(255,255,255,.6);margin-bottom:20px;}
+
+/* ═══ SECTIONS NOUVELLES ═══ */
+.section-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.section-title{font-family:'Baloo 2',sans-serif;font-size:22px;font-weight:800;}
+
+@media(max-width:600px){
+  .memories-grid{grid-template-columns:repeat(2,1fr);}
+  .mood-bar{gap:8px;}
+}
+
 </style>
 </head>
 <body>
@@ -262,6 +304,9 @@ body.dark .topbar,body.dark .quickbar{background:#1e1b30;}
       <div class="nav-item" onclick="setNav(this,'shop')"><span>🛒</span> Courses</div>
       <div class="nav-item" onclick="setNav(this,'projects')"><span>🎯</span> Projets</div>
       <div class="nav-item" onclick="setNav(this,'horo')"><span>⭐</span> Horoscope</div>
+      <div class="nav-item" onclick="setNav(this,'memories')"><span>📸</span> Souvenirs</div>
+      <div class="nav-item" onclick="openSecret()" style="cursor:pointer;"><span>💌</span> Mot doux</div>
+
     </nav>
   </div>
 
@@ -305,6 +350,9 @@ body.dark .topbar,body.dark .quickbar{background:#1e1b30;}
 
   <!-- SECTION: CAL (défaut) -->
   <div id="secCal">
+      <button onclick="openSecret()" style="margin-left:auto;padding:6px 12px;border-radius:12px;border:2px solid rgba(45,43,85,.12);background:none;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;cursor:pointer;color:rgba(45,43,85,.5);" title="Envoyer un mot doux secret">💌</button>
+    </div>
+
     <!-- STATS -->
     <div class="stats-row">
       <div class="stat-card" data-icon="📅">
@@ -608,8 +656,80 @@ body.dark .topbar,body.dark .quickbar{background:#1e1b30;}
   <button class="bottom-nav-item" id="bn-shop" onclick="mobileNav(this,'shop')"><span>🛒</span>Courses</button>
   <button class="bottom-nav-item" id="bn-projects" onclick="mobileNav(this,'projects')"><span>🎯</span>Projets</button>
   <button class="bottom-nav-item" id="bn-horo" onclick="mobileNav(this,'horo')"><span>⭐</span>Horoscope</button>
+  <button class="bottom-nav-item" id="bn-memories" onclick="mobileNav(this,'memories')"><span>📸</span>Souvenirs</button>
 </div>
 
+
+  <!-- ═══ SECTION SOUVENIRS ═══ -->
+  <div id="secMemories" style="display:none;">
+    <div class="section-header">
+      <div class="section-title">📸 Nos Souvenirs</div>
+      <button class="tbtn tbtn-primary" onclick="openAddMemory()">＋ Ajouter</button>
+    </div>
+    <div class="memories-grid" id="memoriesGrid">
+      <div class="memory-card memory-add" onclick="openAddMemory()">
+        <div style="font-size:36px;">📸</div>
+        <div>Ajouter un souvenir</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MOT DOUX MODAL ═══ -->
+  <div class="modal-overlay" id="secretModal">
+    <div class="modal">
+      <div class="modal-head">
+        <div class="modal-title">💌 Mot doux secret</div>
+        <button class="modal-close" onclick="closeModal('secretModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Pour qui ? 💕</label>
+          <div class="members-picker" id="secretForPicker"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">De la part de</label>
+          <div class="members-picker" id="secretFromPicker"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Ton message secret 🤫</label>
+          <textarea class="form-input" id="secretText" rows="4" placeholder="Écris ton message plein de tendresse…" style="resize:none;line-height:1.6;"></textarea>
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="tbtn tbtn-ghost" onclick="closeModal('secretModal')">Annuler</button>
+        <button class="tbtn tbtn-primary" onclick="saveSecret()">💌 Envoyer en secret</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ MODAL SOUVENIR ═══ -->
+  <div class="modal-overlay" id="memoryModal">
+    <div class="modal">
+      <div class="modal-head">
+        <div class="modal-title">📸 Nouveau souvenir</div>
+        <button class="modal-close" onclick="closeModal('memoryModal')">✕</button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Photo</label>
+          <input type="file" accept="image/*" onchange="loadMemoryPhoto(this)" style="margin-bottom:8px;font-size:13px;">
+          <div id="memoryPreview" style="border-radius:12px;overflow:hidden;max-height:200px;display:none;"><img id="memoryPreviewImg" style="width:100%;object-fit:cover;"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Titre du souvenir</label>
+          <input class="form-input" id="memoryTitle" placeholder="Ex: Vacances à la mer 🌊">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Date</label>
+          <input class="form-input" id="memoryDate" type="date">
+        </div>
+      </div>
+      <div class="modal-foot">
+        <button class="tbtn tbtn-ghost" onclick="closeModal('memoryModal')">Annuler</button>
+        <button class="tbtn tbtn-primary" onclick="saveMemory()">💾 Enregistrer</button>
+      </div>
+    </div>
+  </div>
 <!-- TOAST -->
 <div class="toast" id="toast"></div>
 
@@ -1467,7 +1587,7 @@ function mobileNav(el, section){
   const titles = {cal:'📅 Calendrier familial',chat:'💬 Discussion famille',shop:'🛒 Liste de courses',projects:'🎯 Projets & Sorties',horo:'⭐ Horoscope familial'};
   const pt = document.getElementById('pageTitle');
   if(pt) pt.textContent = titles[section]||'';
-  const SECTIONS = {cal:'secCal',agenda:'secAgenda',chat:'secChat',shop:'secShop',projects:'secProjects',horo:'secHoro'};
+  const SECTIONS = {cal:'secCal',agenda:'secAgenda',chat:'secChat',shop:'secShop',projects:'secProjects',horo:'secHoro',memories:'secMemories'};
   Object.entries(SECTIONS).forEach(([k,id])=>{
     const s=document.getElementById(id);
     if(s) s.style.display = k===section?'':'none';
@@ -1475,21 +1595,245 @@ function mobileNav(el, section){
   _currentSection = section;
   if(section==='shop'){ renderShop(); }
   if(section==='horo'){ renderHoro(); }
+  if(section==='memories'){ renderMemories(); }
+  if(section==='memories'){ renderMemories(); }
   if(section==='chat'){ renderChatFull(); }
   if(section==='projects'){ renderProjects(); }
   if(section==='agenda'){ renderAgenda(); }
   window.scrollTo(0,0);
 }
 
+// ═══════════════════════════════════════════════════════════
+// ANNIVERSAIRES
+// ═══════════════════════════════════════════════════════════
+const BDAY_MSGS = [
+  "C'est ton grand jour ! Toute la famille t'aime énormément ! 🎉",
+  "Joyeux anniversaire ! Que cette journée soit aussi extraordinaire que toi ! 🌟",
+  "Une année de plus, encore plus de bonheur à venir ! 🎂",
+  "Le jour le plus spécial de l'année est arrivé ! Profites-en à fond ! 🥳",
+];
+
+function checkBirthdays(){
+  const today = new Date();
+  const mm = String(today.getMonth()+1).padStart(2,'0');
+  const dd = String(today.getDate()).padStart(2,'0');
+  const todayMD = mm+'-'+dd;
+  const bdayKey = 'fs_bday_shown_'+today.getFullYear();
+  const shown = JSON.parse(localStorage.getItem(bdayKey)||'[]');
+  S.members.forEach(m=>{
+    if(!m.birthday) return;
+    const mbd = m.birthday.slice(5); // MM-DD
+    if(mbd !== todayMD) return;
+    if(shown.includes(m.id)) return;
+    shown.push(m.id);
+    localStorage.setItem(bdayKey, JSON.stringify(shown));
+    setTimeout(()=>showBdayBanner(m), 800);
+  });
+}
+
+function showBdayBanner(member){
+  const age = member.birthday ? new Date().getFullYear() - parseInt(member.birthday.slice(0,4)) : null;
+  const msg = BDAY_MSGS[Math.floor(Math.random()*BDAY_MSGS.length)];
+  const av = member.photo
+    ? `<img src="${member.photo}" style="width:90px;height:90px;border-radius:50%;object-fit:cover;border:4px solid white;margin-bottom:12px;">`
+    : `<div style="width:90px;height:90px;border-radius:50%;background:rgba(255,255,255,.3);display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto 12px;">${member.name[0]}</div>`;
+  const banner = document.createElement('div');
+  banner.className = 'bday-banner';
+  banner.id = 'bdayBanner';
+  banner.innerHTML = `
+    <div class="bday-card">
+      ${av}
+      <div style="font-size:48px;margin-bottom:8px;" class="bday-emoji">🎂</div>
+      <div class="bday-name">Joyeux anniversaire ${member.name} ! 🎉</div>
+      ${age ? `<div style="font-size:22px;color:rgba(255,255,255,.85);font-weight:700;margin:4px 0;">${age} ans aujourd'hui !</div>` : ''}
+      <div class="bday-msg">${msg}</div>
+      <button class="bday-close" onclick="closeBday()">🎊 Merci !</button>
+    </div>`;
+  document.body.appendChild(banner);
+  confetti(60);
+  // Musique/son
+  try{
+    const ctx = new AudioContext();
+    const notes = [523,659,784,1047,784,1047,1319];
+    notes.forEach((freq,i)=>{
+      const o=ctx.createOscillator(); const g=ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value=freq; o.type='sine';
+      g.gain.setValueAtTime(.3,ctx.currentTime+i*.18);
+      g.gain.exponentialRampToValueAtTime(.01,ctx.currentTime+i*.18+.3);
+      o.start(ctx.currentTime+i*.18); o.stop(ctx.currentTime+i*.18+.3);
+    });
+  }catch(e){}
+}
+
+function closeBday(){
+  const b=document.getElementById('bdayBanner');
+  if(b){ b.style.animation='fadeOut .3s forwards'; setTimeout(()=>b.remove(),300); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// SOUVENIRS
+// ═══════════════════════════════════════════════════════════
+let _memories = JSON.parse(localStorage.getItem('fs_memories')||'[]');
+let _memoryPhotoData = null;
+
+function renderMemories(){
+  const el = document.getElementById('memoriesGrid');
+  if(!el) return;
+  const sorted = [..._memories].sort((a,b)=>b.date.localeCompare(a.date));
+  el.innerHTML = `<div class="memory-card memory-add" onclick="openAddMemory()"><div style="font-size:36px;">📸</div><div>Ajouter</div></div>`
+    + sorted.map((m,i)=>`
+    <div class="memory-card" onclick="viewMemory(${i})" style="background:${['#FF6B6B','#4ECDC4','#A78BFA','#FFD700'][i%4]}22;">
+      ${m.photo ? `<img src="${m.photo}">` : `<div style="display:flex;align-items:center;justify-content:center;height:100%;font-size:48px;">📷</div>`}
+      <div class="memory-label">
+        <div>${m.title}</div>
+        <div class="memory-date">${new Date(m.date+'T00:00:00').toLocaleDateString('fr-FR',{day:'numeric',month:'long',year:'numeric'})}</div>
+      </div>
+    </div>`).join('');
+}
+
+function openAddMemory(){
+  _memoryPhotoData=null;
+  document.getElementById('memoryTitle').value='';
+  document.getElementById('memoryDate').value=new Date().toISOString().slice(0,10);
+  document.getElementById('memoryPreview').style.display='none';
+  openModal('memoryModal');
+}
+
+function loadMemoryPhoto(input){
+  const f=input.files[0]; if(!f) return;
+  const r=new FileReader();
+  r.onload=e=>{
+    _memoryPhotoData=e.target.result;
+    document.getElementById('memoryPreviewImg').src=_memoryPhotoData;
+    document.getElementById('memoryPreview').style.display='block';
+  };
+  r.readAsDataURL(f);
+}
+
+function saveMemory(){
+  const title=document.getElementById('memoryTitle').value.trim();
+  const date=document.getElementById('memoryDate').value;
+  if(!title){ toast('⚠️ Titre obligatoire !'); return; }
+  _memories.unshift({title,date,photo:_memoryPhotoData||null,id:Date.now()});
+  localStorage.setItem('fs_memories',JSON.stringify(_memories));
+  closeModal('memoryModal');
+  renderMemories();
+  toast('📸 Souvenir ajouté !');
+  confetti(25);
+}
+
+function viewMemory(idx){
+  const m=_memories[idx]; if(!m) return;
+  const d=new Date(m.date+'T00:00:00').toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const overlay=document.createElement('div');
+  overlay.className='bday-banner';
+  overlay.style.cssText='cursor:pointer;';
+  overlay.onclick=()=>overlay.remove();
+  overlay.innerHTML=`<div style="background:var(--white);border-radius:28px;max-width:420px;width:90vw;overflow:hidden;box-shadow:0 20px 60px rgba(0,0,0,.4);">
+    ${m.photo?`<img src="${m.photo}" style="width:100%;max-height:280px;object-fit:cover;">`:''}
+    <div style="padding:20px;">
+      <div style="font-family:'Baloo 2',sans-serif;font-size:20px;font-weight:800;margin-bottom:4px;">${m.title}</div>
+      <div style="font-size:13px;color:rgba(45,43,85,.5);">📅 ${d}</div>
+      <button onclick="deleteMemory(${idx},event)" style="margin-top:12px;padding:6px 14px;border-radius:10px;border:2px solid var(--coral);background:none;color:var(--coral);font-size:12px;font-weight:700;cursor:pointer;">🗑️ Supprimer</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+function deleteMemory(idx,e){
+  e.stopPropagation();
+  if(!confirm('Supprimer ce souvenir ?')) return;
+  _memories.splice(idx,1);
+  localStorage.setItem('fs_memories',JSON.stringify(_memories));
+  document.querySelector('.bday-banner')?.remove();
+  renderMemories();
+  toast('🗑️ Souvenir supprimé');
+}
+
+// ═══════════════════════════════════════════════════════════
+// MOT DOUX SECRET
+// ═══════════════════════════════════════════════════════════
+let _secretForId = null;
+let _secretFromId = null;
+
+function openSecret(){
+  _secretForId=null; _secretFromId=getMe()?.id||null;
+  document.getElementById('secretText').value='';
+  renderSecretPickers();
+  openModal('secretModal');
+  if(document.getElementById('mobileSidebar')?.classList.contains('open')) toggleSidebar();
+}
+
+function renderSecretPickers(){
+  renderSecretPicker('secretForPicker','for');
+  renderSecretPicker('secretFromPicker','from');
+}
+
+function renderSecretPicker(elId, role){
+  const el=document.getElementById(elId); if(!el) return;
+  const selected = role==='for' ? _secretForId : _secretFromId;
+  el.innerHTML=S.members.map(m=>{
+    const sel=m.id===selected;
+    return `<button class="mpick-btn ${sel?'selected':''}" onclick="${role==='for'?'_secretForId':'_secretFromId'}=${m.id};renderSecretPickers();" style="${sel?'border-color:'+m.color+';color:'+m.color+';background:'+m.color+'15;':''}">${m.name}</button>`;
+  }).join('');
+}
+
+async function saveSecret(){
+  if(!_secretForId){ toast('⚠️ Choisis le destinataire !'); return; }
+  const txt=document.getElementById('secretText').value.trim();
+  if(!txt){ toast('⚠️ Écris un message !'); return; }
+  const from=S.members.find(m=>m.id===_secretFromId);
+  // Stocker dans localStorage avec clé par destinataire
+  const key='fs_secret_'+_secretForId;
+  const secrets=JSON.parse(localStorage.getItem(key)||'[]');
+  secrets.push({text:txt, from:from?.name||'Quelqu\'un', ts:Date.now()});
+  localStorage.setItem(key,JSON.stringify(secrets));
+  closeModal('secretModal');
+  toast('💌 Message secret envoyé !');
+  confetti(20);
+}
+
+function checkSecrets(){
+  const me=getMe(); if(!me) return;
+  const key='fs_secret_'+me.id;
+  const secrets=JSON.parse(localStorage.getItem(key)||'[]');
+  if(!secrets.length) return;
+  // Montrer le plus récent non lu
+  const shown=JSON.parse(localStorage.getItem('fs_secrets_shown')||'[]');
+  const unread=secrets.filter(s=>!shown.includes(s.ts));
+  if(!unread.length) return;
+  const s=unread[0];
+  shown.push(s.ts);
+  localStorage.setItem('fs_secrets_shown',JSON.stringify(shown));
+  setTimeout(()=>showSecret(s), 1500);
+}
+
+function showSecret(secret){
+  const overlay=document.createElement('div');
+  overlay.className='secret-overlay';
+  overlay.id='secretOverlay';
+  overlay.innerHTML=`<div class="secret-card">
+    <div class="secret-envelope">💌</div>
+    <div style="font-size:13px;color:rgba(255,255,255,.5);margin:8px 0 4px;">Un message rien que pour toi… ✨</div>
+    <div class="secret-msg">"${secret.text}"</div>
+    <div class="secret-from">— avec amour, ${secret.from} 💕</div>
+    <button onclick="document.getElementById('secretOverlay').remove();confetti(30);" style="padding:12px 28px;border-radius:20px;border:none;background:white;color:#764ba2;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;">🥰 Merci !</button>
+  </div>`;
+  document.body.appendChild(overlay);
+}
+
+
 async function init(){
   applyDark();
   renderJoke();
   renderFunMsg();
-  // Set today's date in quickbar
   document.getElementById('qbDate').value=new Date().toISOString().slice(0,10);
   await dbLoad();
   setupRealtime();
   fetchWeather();
+  checkBirthdays();
+  checkSecrets();
   setInterval(renderFunMsg,1800000);
 }
 init();
