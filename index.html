@@ -873,8 +873,25 @@ function renderHoro(){
   const seed=today.getDate()+today.getMonth()*31;
   const themeKey=DAILY_THEMES[today.getDay()];
   const dayLabel=today.toLocaleDateString('fr-FR',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-  let persons=S.members.filter(m=>m.birthday).map(m=>({name:m.name,photo:m.photo,color:m.color,birthday:m.birthday,birthTime:m.birthTime||null,birthPlace:m.birthPlace||null}));
-  if(!persons.length){ el.innerHTML='<div style="color:rgba(255,255,255,.4);text-align:center;padding:30px;">Ajoutez vos dates de naissance dans les profils 👥</div>'; return; }
+  const BIRTH={
+    'Mike':      {birthday:'1970-05-24',birthTime:'11:20',birthPlace:'Binche'},
+    'Stéphanie': {birthday:'1984-02-11',birthTime:'08:40',birthPlace:'Charleroi'},
+    'Kilian':    {birthday:'2002-06-06',birthTime:'15:19',birthPlace:'Charleroi'},
+    'Maïa':      {birthday:'2011-07-19',birthTime:'03:13',birthPlace:'Charleroi'},
+  };
+  let persons=S.members.length ? S.members.map(m=>{
+    const b=BIRTH[m.name]||{};
+    return {name:m.name,photo:m.photo,color:m.color,
+      birthday:m.birthday||b.birthday||null,
+      birthTime:m.birthTime||b.birthTime||null,
+      birthPlace:m.birthPlace||b.birthPlace||null};
+  }).filter(p=>p.birthday) : [
+    {name:'Mike',      photo:null,color:'#60A5FA',birthday:'1970-05-24',birthTime:'11:20',birthPlace:'Binche'},
+    {name:'Stéphanie', photo:null,color:'#F472B6',birthday:'1984-02-11',birthTime:'08:40',birthPlace:'Charleroi'},
+    {name:'Kilian',    photo:null,color:'#4ECDC4',birthday:'2002-06-06',birthTime:'15:19',birthPlace:'Charleroi'},
+    {name:'Maïa',      photo:null,color:'#A78BFA',birthday:'2011-07-19',birthTime:'03:13',birthPlace:'Charleroi'},
+  ];
+  if(!persons.length) persons=Object.entries(BIRTH).map(([name,b])=>({name,...b,photo:null,color:'#888'}));
   el.innerHTML=`<div style="font-size:11px;color:rgba(255,255,255,.3);margin-bottom:14px;letter-spacing:1px;text-transform:uppercase;">${dayLabel} · Thème : ${THEME_LABELS[themeKey]}</div>`
   +persons.map(p=>{
     const solar=getSolarSign(p.birthday); if(!solar) return '';
@@ -945,7 +962,11 @@ async function dbLoad(){
     catch(e){ console.warn(table,'failed',e.message); return {data:null}; }
   }
   const [m,e,p,c,s]=await Promise.all([safe('members','id'),safe('events','id'),safe('projects','id'),safe('chats','ts'),safe('shopping','created_at')]);
-  if(m.data) S.members  =m.data.map(r=>({id:r.id,name:r.name,role:r.role,color:r.color||'#FF6B6B',photo:r.photo,birthday:r.birthday,birthTime:r.birth_time||null,birthPlace:r.birth_place||null}));
+  if(m.data){
+    const _BD={'Mike':{birthTime:'11:20',birthPlace:'Binche',birthday:'1970-05-24'},'Stephanie':{birthTime:'08:40',birthPlace:'Charleroi',birthday:'1984-02-11'},'Kilian':{birthTime:'15:19',birthPlace:'Charleroi',birthday:'2002-06-06'},'Maia':{birthTime:'03:13',birthPlace:'Charleroi',birthday:'2011-07-19'}};
+    const _BDn={'Mike':'Mike','Stéphanie':'Stephanie','Maïa':'Maia','Kilian':'Kilian'};
+    S.members=m.data.map(r=>{const bd=_BD[_BDn[r.name]||r.name]||{};return{id:r.id,name:r.name,role:r.role,color:r.color||'#FF6B6B',photo:r.photo,birthday:r.birthday||bd.birthday||null,birthTime:(r.birth_time!=null?r.birth_time:bd.birthTime)||null,birthPlace:(r.birth_place!=null?r.birth_place:bd.birthPlace)||null};});
+  }
   if(e.data) S.events   =e.data.map(r=>({id:r.id,title:r.title,date:r.date,dateEnd:r.date_end,time:r.time,timeEnd:r.time_end,cat:r.cat,memberIds:r.member_ids||[],location:r.location,note:r.note}));
   if(p.data) S.projects =p.data.map(r=>({id:r.id,name:r.name,emoji:r.emoji||'🎯',desc:r.description,date:r.date,budget:r.budget,progress:r.progress||0,memberIds:r.member_ids||[]}));
   if(c.data) S.chats    =c.data.map(r=>({id:r.id,memberId:r.member_id,text:r.text,ts:r.ts}));
@@ -1332,14 +1353,27 @@ function renderColorPicker(){
 }
 function loadPhoto(input){const f=input.files[0];if(!f)return;const r=new FileReader();r.onload=e=>{document.getElementById('memPhoto').value=e.target.result;};r.readAsDataURL(f);}
 async function saveMember(){
-  const name=document.getElementById('memName').value.trim(); if(!name){toast('⚠️ Nom obligatoire !');return;}
-  const row={name,role:document.getElementById('memRole').value,color:S.color,photo:document.getElementById('memPhoto').value||null,birthday:document.getElementById('memBirthday').value||null,birth_time:document.getElementById('memBirthTime').value||null,birth_place:document.getElementById('memBirthPlace').value||null};
+  const name=document.getElementById('memName').value.trim(); if(!name){toast('Nom obligatoire !');return;}
+  const rowBase={name,role:document.getElementById('memRole').value,color:S.color,photo:document.getElementById('memPhoto').value||null,birthday:document.getElementById('memBirthday').value||null};
+  const bTime=document.getElementById('memBirthTime').value||null;
+  const bPlace=document.getElementById('memBirthPlace').value||null;
+  const rowFull=Object.assign({},rowBase,{birth_time:bTime,birth_place:bPlace});
   let err,newId=S.editMemberId;
-  if(S.editMemberId){({error:err}=await sb.from('members').update(row).eq('id',S.editMemberId));}
-  else{const {data,error}=await sb.from('members').insert(row).select();err=error;if(data&&data[0])newId=data[0].id;}
-  if(err){toast('⚠️ Erreur: '+err.message);console.error(err);return;}
+  if(S.editMemberId){
+    ({error:err}=await sb.from('members').update(rowFull).eq('id',S.editMemberId));
+    if(err&&err.message&&err.message.toLowerCase().includes('column')){
+      ({error:err}=await sb.from('members').update(rowBase).eq('id',S.editMemberId));
+    }
+  } else {
+    let r=await sb.from('members').insert(rowFull).select(); err=r.error;
+    if(err&&err.message&&err.message.toLowerCase().includes('column')){
+      r=await sb.from('members').insert(rowBase).select(); err=r.error;
+      if(r.data&&r.data[0]) newId=r.data[0].id;
+    } else if(r.data&&r.data[0]) newId=r.data[0].id;
+  }
+  if(err){toast('Erreur: '+err.message);console.error(err);return;}
   if(document.getElementById('memIsMe').checked&&newId){_me=newId;localStorage.setItem('fs_me',newId);}
-  closeModal('memberModal');toast(S.editMemberId?'✅ Modifié !':'✨ Membre ajouté !');S.editMemberId=null;
+  closeModal('memberModal');toast(S.editMemberId?'Modifie !':'Membre ajoute !');S.editMemberId=null;
   await dbLoad();renderFamilyList();
 }
 async function deleteMember(){
