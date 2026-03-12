@@ -815,16 +815,7 @@ function getSolarSign(birthday){
   return ZODIAC_SIGNS[0];
 }
 
-function getAscendant(birthday,birthTime){
-  if(!birthday||!birthTime) return null;
-  const solar=getSolarSign(birthday); if(!solar) return null;
-  const solarIdx=ZODIAC_SIGNS.indexOf(solar);
-  const [h,min]=birthTime.split(':').map(Number);
-  const hoursFromNoon=h+min/60-12;
-  const signOffset=Math.round(hoursFromNoon/2);
-  const ascIdx=((solarIdx+signOffset)%12+12)%12;
-  return ZODIAC_SIGNS[ascIdx];
-}
+
 
 function getLunarSign(birthday){
   if(!birthday) return null;
@@ -895,7 +886,7 @@ function renderHoro(){
   el.innerHTML=`<div style="font-size:11px;color:rgba(255,255,255,.3);margin-bottom:14px;letter-spacing:1px;text-transform:uppercase;">${dayLabel} · Thème : ${THEME_LABELS[themeKey]}</div>`
   +persons.map(p=>{
     const solar=getSolarSign(p.birthday); if(!solar) return '';
-    const asc=p.birthTime?getAscendant(p.birthday,p.birthTime):null;
+    const asc=p.birthTime?getAscendant(p.birthday,p.birthTime,p.birthPlace||'Charleroi'):null;
     const lunar=getLunarSign(p.birthday);
     const h=HORO[solar.s]||HORO['Gémeaux'];
     const dayText=h.jour[seed%h.jour.length];
@@ -1476,4 +1467,51 @@ init();
 
 </script>
 </body>
-</html>
+</html>// ── Calcul ascendant (astronomique précis : Placidus / horizon Est) ──
+// Latitude/longitude codées par ville
+const CITY_COORDS = {
+  'Charleroi': {lat:50.4108, lon:4.4446},
+  'Binche':    {lat:50.4072, lon:4.1635},
+  'Bruxelles': {lat:50.8503, lon:4.3517},
+  'Liège':     {lat:50.6326, lon:5.5797},
+  'Namur':     {lat:50.4674, lon:4.8720},
+  'Gand':      {lat:51.0543, lon:3.7174},
+  'Anvers':    {lat:51.2194, lon:4.4025},
+};
+function _jd(y,mo,d,hUT){
+  if(mo<=2){y--;mo+=12;}
+  const A=Math.floor(y/100),B=2-A+Math.floor(A/4);
+  return Math.floor(365.25*(y+4716))+Math.floor(30.6001*(mo+1))+d+hUT/24+B-1524.5;
+}
+function _gmst(JD){
+  const T=(JD-2451545)/36525;
+  let g=280.46061837+360.98564736629*(JD-2451545)+0.000387933*T*T-T*T*T/38710000;
+  return((g%360)+360)%360;
+}
+function _obliq(JD){
+  const T=(JD-2451545)/36525;
+  return 23.439291111-0.013004167*T;
+}
+function _tzBelgique(month){ return (month>=4&&month<=10)?2:1; }
+function getAscendant(birthday, birthTime, birthPlace){
+  if(!birthday||!birthTime) return null;
+  const [y,mo,d]=birthday.split('-').map(Number);
+  const [h,mi]=birthTime.split(':').map(Number);
+  // Coordonnées : chercher par ville ou défaut Charleroi
+  const placeKey=Object.keys(CITY_COORDS).find(k=>(birthPlace||'').toLowerCase().includes(k.toLowerCase()));
+  const coords=CITY_COORDS[placeKey||'Charleroi'];
+  const tz=_tzBelgique(mo);
+  const hUT=h+mi/60-tz;
+  const JD=_jd(y,mo,d,hUT);
+  const ramc=(((_gmst(JD)+coords.lon)%360)+360)%360;
+  const obl=_obliq(JD)*Math.PI/180;
+  const lat=coords.lat*Math.PI/180;
+  const ramcR=ramc*Math.PI/180;
+  let ascDeg=Math.atan2(Math.cos(ramcR),-(Math.sin(ramcR)*Math.cos(obl)+Math.tan(lat)*Math.sin(obl)))*180/Math.PI;
+  ascDeg=((ascDeg%360)+360)%360;
+  // Table écliptique : Bélier=0°, Taureau=30°, ... (ZODIAC_SIGNS commence par Capricorne)
+  const ECL_ORDER=['Bélier','Taureau','Gémeaux','Cancer','Lion','Vierge','Balance','Scorpion','Sagittaire','Capricorne','Verseau','Poissons'];
+  const eclSign=ECL_ORDER[Math.floor(ascDeg/30)%12];
+  const sign=ZODIAC_SIGNS.find(z=>z.s===eclSign)||ZODIAC_SIGNS[0];
+  return Object.assign({},sign,{ascDeg:ascDeg.toFixed(1)});
+}
