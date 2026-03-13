@@ -1020,7 +1020,7 @@ async function dbLoad(){
     const _BDn={'Mike':'Mike','Stéphanie':'Stephanie','Maïa':'Maia','Kilian':'Kilian'};
     S.members=m.data.map(r=>{const bd=_BD[_BDn[r.name]||r.name]||{};return{id:r.id,name:r.name,role:r.role,color:r.color||'#FF6B6B',photo:r.photo,birthday:r.birthday||bd.birthday||null,birthTime:(r.birth_time!=null?r.birth_time:bd.birthTime)||null,birthPlace:(r.birth_place!=null?r.birth_place:bd.birthPlace)||null};});
   }
-  if(e.data) S.events   =e.data.map(r=>({id:r.id,title:r.title,date:r.date,dateEnd:r.date_end,time:r.time,timeEnd:r.time_end,cat:r.cat,memberIds:r.member_ids||[],location:r.location,note:r.note}));
+  if(e.data) S.events   =e.data.map(r=>({id:r.id,title:r.title,date:r.date,dateEnd:r.date_end,time:r.time,timeEnd:r.time_end,cat:r.cat,memberIds:r.member_ids||[],location:r.location,note:r.note,seriesId:r.series_id||null}));
   if(p.data) S.projects =p.data.map(r=>({id:r.id,name:r.name,emoji:r.emoji||'🎯',desc:r.description,date:r.date,budget:r.budget,progress:r.progress||0,memberIds:r.member_ids||[]}));
   if(c.data) S.chats    =c.data.map(r=>({id:r.id,memberId:r.member_id,text:r.text,ts:r.ts}));
   if(s.data) S.shopItems=s.data.map(r=>({id:r.id,name:r.name,emoji:r.emoji,category:r.category,done:r.done,memberId:r.member_id}));
@@ -1392,10 +1392,29 @@ async function saveEvent(){
   const repeat=document.getElementById('evtRepeat').value;
   const repeatEnd=document.getElementById('evtRepeatEnd').value;
   let err;
-  if(S.editEventId){({error:err}=await sb.from('events').update(row).eq('id',S.editEventId));}
-  else{
-    ({error:err}=await sb.from('events').insert(row));
-    // Générer les occurrences si répétition
+  if(S.editEventId){
+    const evt=S.events.find(x=>x.id===S.editEventId);
+    const seriesId=evt?.seriesId;
+    const seriesEvents=seriesId ? S.events.filter(x=>x.seriesId===seriesId) : [];
+    if(seriesId && seriesEvents.length>1){
+      const choice=await confirmSeriesAction(seriesEvents.length,'modifier');
+      if(choice===null) return;
+      if(choice==='all'){
+        const ids=seriesEvents.map(x=>x.id);
+        const seriesRow={title:row.title,time:row.time,time_end:row.time_end,cat:row.cat,member_ids:row.member_ids,location:row.location,note:row.note};
+        ({error:err}=await sb.from('events').update(seriesRow).in('id',ids));
+        if(!err) toast('🔁 Toute la série modifiée !');
+      } else {
+        ({error:err}=await sb.from('events').update(row).eq('id',S.editEventId));
+        if(!err) toast('✅ Cet événement modifié !');
+      }
+    } else {
+      ({error:err}=await sb.from('events').update(row).eq('id',S.editEventId));
+      if(!err) toast('✅ Modifié !');
+    }
+  } else {
+    const seriesId=(repeat && repeatEnd) ? crypto.randomUUID() : null;
+    ({error:err}=await sb.from('events').insert({...row,series_id:seriesId}));
     if(!err && repeat && repeatEnd && date < repeatEnd){
       const days={weekly:7,biweekly:14,monthly:null};
       let cur=new Date(date+'T00:00:00');
@@ -1405,22 +1424,59 @@ async function saveEvent(){
         if(repeat==='monthly'){cur.setMonth(cur.getMonth()+1);}
         else{cur.setDate(cur.getDate()+days[repeat]);}
         if(cur>end) break;
-        inserts.push({...row,date:cur.toISOString().slice(0,10)});
+        inserts.push({...row,date:cur.toISOString().slice(0,10),series_id:seriesId});
       }
       if(inserts.length) await sb.from('events').insert(inserts);
       toast('🔁 '+inserts.length+' répétition(s) ajoutée(s) !');
     }
   }
   if(err){toast('⚠️ Erreur sauvegarde');console.error(err);return;}
-  closeModal('eventModal');if(!repeat||!repeatEnd)toast(S.editEventId?'✅ Modifié !':'🎉 Ajouté !');confetti(25);
+  closeModal('eventModal');confetti(25);
   S.editEventId=null;S.memberIds=[];await dbLoad();
 }
 async function deleteEvent(){
   if(!S.editEventId) return;
-  const e=S.events.find(x=>x.id===S.editEventId);
-  if(!confirm('Supprimer "'+e?.title+'" ?')) return;
-  await sb.from('events').delete().eq('id',S.editEventId);
-  closeModal('eventModal');toast('🗑️ Supprimé');S.editEventId=null;await dbLoad();
+  const evt=S.events.find(x=>x.id===S.editEventId);
+  const seriesId=evt?.seriesId;
+  const seriesEvents=seriesId ? S.events.filter(x=>x.seriesId===seriesId) : [];
+  if(seriesId && seriesEvents.length>1){
+    const choice=await confirmSeriesAction(seriesEvents.length,'supprimer');
+    if(choice===null) return;
+    if(choice==='all'){
+      const ids=seriesEvents.map(x=>x.id);
+      await sb.from('events').delete().in('id',ids);
+      closeModal('eventModal');toast('🗑️ Toute la série supprimée');
+    } else {
+      await sb.from('events').delete().eq('id',S.editEventId);
+      closeModal('eventModal');toast('🗑️ Événement supprimé');
+    }
+  } else {
+    if(!confirm('Supprimer "'+evt?.title+'" ?')) return;
+    await sb.from('events').delete().eq('id',S.editEventId);
+    closeModal('eventModal');toast('🗑️ Supprimé');
+  }
+  S.editEventId=null;await dbLoad();
+}
+function confirmSeriesAction(count,action){
+  return new Promise(resolve=>{
+    const overlay=document.createElement('div');
+    overlay.style.cssText='position:fixed;inset:0;z-index:10000;background:rgba(45,43,85,.75);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;';
+    overlay.innerHTML=`
+      <div style="background:var(--white);border-radius:24px;padding:28px 24px;max-width:340px;width:90vw;text-align:center;box-shadow:0 20px 60px rgba(45,43,85,.3);">
+        <div style="font-size:40px;margin-bottom:10px;">🔁</div>
+        <div style="font-family:'Baloo 2',sans-serif;font-size:18px;font-weight:800;color:var(--dark);margin-bottom:8px;">Événement répétitif</div>
+        <div style="font-size:13px;color:rgba(45,43,85,.55);margin-bottom:22px;">Cet événement fait partie d'une série de <strong>${count}</strong> occurrences.<br>Tu veux ${action} quoi ?</div>
+        <div style="display:flex;flex-direction:column;gap:10px;">
+          <button id="saBtnAll" style="padding:13px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--coral),var(--peach));color:white;font-family:'Nunito',sans-serif;font-size:14px;font-weight:800;cursor:pointer;">🔁 Toute la série (${count} événements)</button>
+          <button id="saBtnOne" style="padding:13px;border-radius:14px;border:2px solid rgba(45,43,85,.18);background:none;color:var(--dark);font-family:'Nunito',sans-serif;font-size:14px;font-weight:700;cursor:pointer;">📅 Cet événement uniquement</button>
+          <button id="saBtnCancel" style="padding:9px;border-radius:14px;border:none;background:none;color:rgba(45,43,85,.4);font-family:'Nunito',sans-serif;font-size:13px;font-weight:600;cursor:pointer;">Annuler</button>
+        </div>
+      </div>`;
+    document.body.appendChild(overlay);
+    overlay.querySelector('#saBtnAll').onclick=()=>{overlay.remove();resolve('all');};
+    overlay.querySelector('#saBtnOne').onclick=()=>{overlay.remove();resolve('one');};
+    overlay.querySelector('#saBtnCancel').onclick=()=>{overlay.remove();resolve(null);};
+  });
 }
 
 // QUICKBAR
