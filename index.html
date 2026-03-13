@@ -205,7 +205,7 @@ body.dark .topbar,body.dark .quickbar{background:#1e1b30;}
   .sidebar{display:none;position:fixed;inset:0;z-index:500;padding:70px 16px 20px;overflow-y:auto;}
   .sidebar.open{display:flex;}
   .topbar{position:sticky;top:0;z-index:100;width:100%;flex-shrink:0;}
-  .quickbar{width:100%;overflow-x:auto;flex-shrink:0;}
+  .quickbar{width:100%;overflow-x:auto;flex-shrink:0;white-space:nowrap;}
   .main{flex:1;padding:12px;width:100%;}
   .stats-row{grid-template-columns:repeat(2,1fr);}
   .widget-wrap{grid-template-columns:1fr;}
@@ -214,18 +214,33 @@ body.dark .topbar,body.dark .quickbar{background:#1e1b30;}
   .hamburger{display:flex!important;}
   .ham-close{display:flex!important;}
   .page-title{font-size:15px;}
+  /* Calendrier mobile : cellules plus petites */
+  .cal-day{min-height:52px;padding:4px 3px;font-size:12px;}
+  .evt-pill{font-size:10px;padding:2px 4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;}
+  .cal-wd{padding:6px 2px;font-size:10px;}
+  /* Modal plein écran en bas */
+  .modal{width:100vw;max-height:92vh;border-radius:24px 24px 0 0;position:fixed;bottom:0;left:0;top:auto;transform:none;}
+  .modal-overlay{align-items:flex-end;padding:0;}
+  /* Grilles de formulaire en colonne */
+  #singleFields > div[style*="grid"]{display:flex!important;flex-direction:column!important;gap:8px!important;}
+  #multiFields > div[style*="grid"]{display:flex!important;flex-direction:column!important;gap:8px!important;}
 }
 @media(max-width:600px){
   .stats-row{grid-template-columns:repeat(2,1fr);gap:8px;}
   .stat-card{padding:12px;}
   .stat-value{font-size:24px;}
-  .modal{width:100vw;max-height:96vh;border-radius:20px 20px 0 0;position:fixed;bottom:0;left:0;top:auto;transform:none;}
-  .modal-overlay{align-items:flex-end;padding:0;}
   .shop-add-row{flex-direction:column;}
   .widget-wrap{grid-template-columns:1fr;}
   .dw-body{padding:10px 14px;}
   .chat-messages{max-height:250px;}
   .tbtn{font-size:12px;padding:6px 10px;}
+  /* Calendrier très petit : masquer les pills sauf 1 */
+  .cal-day{min-height:44px;padding:3px 2px;}
+  .evt-pill:not(:first-child){display:none;}
+  .day-num{font-size:12px;}
+  /* Quickbar scrollable */
+  .quickbar{gap:6px;padding:0 8px;}
+  .qb-input{min-width:120px;}
 }
 /* Bottom nav mobile */
 .bottom-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--white);border-top:2px solid rgba(45,43,85,.08);z-index:200;padding:6px 0 max(6px,env(safe-area-inset-bottom));box-shadow:0 -4px 20px rgba(45,43,85,.1);}
@@ -596,6 +611,23 @@ body.dark .topbar,body.dark .quickbar{background:#1e1b30;}
       <div class="form-group" id="evtRepeatEndGroup" style="display:none;">
         <label class="form-label">Répéter jusqu'au</label>
         <input class="form-input" id="evtRepeatEnd" type="date">
+      </div>
+      <div class="form-group">
+        <label class="form-label">📸 Photo du souvenir</label>
+        <div id="evtPhotoPreview" style="display:none;position:relative;margin-bottom:8px;border-radius:14px;overflow:hidden;max-height:180px;">
+          <img id="evtPhotoImg" src="" style="width:100%;max-height:180px;object-fit:cover;display:block;">
+          <button onclick="clearEvtPhoto()" style="position:absolute;top:6px;right:6px;width:26px;height:26px;border-radius:50%;border:none;background:rgba(0,0,0,.6);color:white;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;">✕</button>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <label style="flex:1;padding:10px;border-radius:12px;border:2px dashed rgba(45,43,85,.2);background:rgba(45,43,85,.03);display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:700;color:rgba(45,43,85,.5);cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--coral)'" onmouseout="this.style.borderColor='rgba(45,43,85,.2)'">
+            🖼️ Galerie
+            <input type="file" accept="image/*" style="display:none;" onchange="loadEvtPhoto(this)">
+          </label>
+          <label id="evtCameraBtn" style="flex:1;padding:10px;border-radius:12px;border:2px dashed rgba(45,43,85,.2);background:rgba(45,43,85,.03);display:flex;align-items:center;justify-content:center;gap:6px;font-size:13px;font-weight:700;color:rgba(45,43,85,.5);cursor:pointer;transition:all .2s;" onmouseover="this.style.borderColor='var(--teal)'" onmouseout="this.style.borderColor='rgba(45,43,85,.2)'">
+            📷 Caméra
+            <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="loadEvtPhoto(this)">
+          </label>
+        </div>
       </div>
     </div>
     <div class="modal-foot">
@@ -1023,7 +1055,7 @@ async function dbLoad(){
     const _BDn={'Mike':'Mike','Stéphanie':'Stephanie','Maïa':'Maia','Kilian':'Kilian'};
     S.members=m.data.map(r=>{const bd=_BD[_BDn[r.name]||r.name]||{};return{id:r.id,name:r.name,role:r.role,color:r.color||'#FF6B6B',photo:r.photo,birthday:r.birthday||bd.birthday||null,birthTime:(r.birth_time!=null?r.birth_time:bd.birthTime)||null,birthPlace:(r.birth_place!=null?r.birth_place:bd.birthPlace)||null};});
   }
-  if(e.data) S.events   =e.data.map(r=>({id:r.id,title:r.title,date:r.date,dateEnd:r.date_end,time:r.time,timeEnd:r.time_end,cat:r.cat,memberIds:r.member_ids||[],location:r.location,note:r.note,seriesId:r.series_id||null}));
+  if(e.data) S.events   =e.data.map(r=>({id:r.id,title:r.title,date:r.date,dateEnd:r.date_end,time:r.time,timeEnd:r.time_end,cat:r.cat,memberIds:r.member_ids||[],location:r.location,note:r.note,seriesId:r.series_id||null,photo:r.photo||null}));
   if(p.data) S.projects =p.data.map(r=>({id:r.id,name:r.name,emoji:r.emoji||'🎯',desc:r.description,date:r.date,budget:r.budget,progress:r.progress||0,memberIds:r.member_ids||[]}));
   if(c.data) S.chats    =c.data.map(r=>({id:r.id,memberId:r.member_id,text:r.text,ts:r.ts}));
   if(s.data) S.shopItems=s.data.map(r=>({id:r.id,name:r.name,emoji:r.emoji,category:r.category,done:r.done,memberId:r.member_id}));
@@ -1367,6 +1399,7 @@ function openAddEvent(dt=''){
   document.getElementById('evtModalTitle').textContent='✨ Nouvel événement';
   document.getElementById('evtSaveBtn').textContent='💾 Enregistrer';
   document.getElementById('evtDeleteBtn').style.display='none';
+  clearEvtPhoto();
   renderCatGrid();renderMemPicker('memPicker');openModal('eventModal');
 }
 function openEditEvent(id){
@@ -1376,6 +1409,9 @@ function openEditEvent(id){
   else{setDayMode('single');const d=document.getElementById('evtDate'),ti=document.getElementById('evtTime'),te=document.getElementById('evtTimeEnd');if(d)d.value=e.date;if(ti)ti.value=e.time||'';if(te)te.value=e.timeEnd||'';}
   document.getElementById('evtTitle').value=e.title||'';
   document.getElementById('evtLocation').value=e.location||'';
+  // Photo existante
+  if(e.photo){_evtPhotoData=e.photo;document.getElementById('evtPhotoImg').src=e.photo;document.getElementById('evtPhotoPreview').style.display='block';}
+  else{clearEvtPhoto();}
   document.getElementById('evtNote').value=e.note||'';
   document.getElementById('evtRepeat').value='';
   document.getElementById('evtRepeatEnd').value='';
@@ -1391,7 +1427,7 @@ async function saveEvent(){
   let date,dateEnd=null;
   if(S.dayMode==='multi'){date=document.getElementById('evtDateFrom').value;dateEnd=document.getElementById('evtDateTo').value;if(!date||!dateEnd){toast('⚠️ Dates obligatoires !');return;}}
   else{date=document.getElementById('evtDate').value;if(!date){toast('⚠️ Date obligatoire !');return;}}
-  const row={title,date,date_end:dateEnd,time:document.getElementById('evtTime').value||null,time_end:document.getElementById('evtTimeEnd').value||null,cat:S.cat,member_ids:S.memberIds,location:document.getElementById('evtLocation').value||null,note:document.getElementById('evtNote').value||null};
+  const row={title,date,date_end:dateEnd,time:document.getElementById('evtTime').value||null,time_end:document.getElementById('evtTimeEnd').value||null,cat:S.cat,member_ids:S.memberIds,location:document.getElementById('evtLocation').value||null,note:document.getElementById('evtNote').value||null,photo:_evtPhotoData||null};
   const repeat=document.getElementById('evtRepeat').value;
   const repeatEnd=document.getElementById('evtRepeatEnd').value;
   let err;
@@ -1607,6 +1643,18 @@ function deleteMemory(idx,e){e.stopPropagation();if(!confirm('Supprimer ce souve
 // ═══════════════════════════════════════════════════════════════
 // MOT DOUX SECRET
 // ═══════════════════════════════════════════════════════════════
+let _evtPhotoData=null;
+function loadEvtPhoto(input){
+  const f=input.files[0];if(!f)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    _evtPhotoData=e.target.result;
+    document.getElementById('evtPhotoImg').src=_evtPhotoData;
+    document.getElementById('evtPhotoPreview').style.display='block';
+  };
+  r.readAsDataURL(f);
+}
+function clearEvtPhoto(){_evtPhotoData=null;document.getElementById('evtPhotoPreview').style.display='none';document.getElementById('evtPhotoImg').src='';}
 let _secretForId=null,_secretFromId=null;
 function openSecret(){_secretForId=null;_secretFromId=getMe()?.id||null;document.getElementById('secretText').value='';renderSecretPickers();openModal('secretModal');if(document.getElementById('mobileSidebar')?.classList.contains('open'))toggleSidebar();}
 function renderSecretPickers(){renderSecretPicker('secretForPicker','for');renderSecretPicker('secretFromPicker','from');}
