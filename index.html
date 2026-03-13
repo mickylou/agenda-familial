@@ -1420,14 +1420,15 @@ async function saveEvent(){
     ({error:err}=await sb.from('events').insert({...row,series_id:seriesId}));
     if(!err && repeat && repeatEnd && date < repeatEnd){
       const days={weekly:7,biweekly:14,monthly:null};
-      let cur=new Date(date+'T00:00:00');
-      const end=new Date(repeatEnd+'T00:00:00');
+      let cur=new Date(date+'T12:00:00');
+      const end=new Date(repeatEnd+'T12:00:00');
+      const localDate=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
       const inserts=[];
       while(true){
         if(repeat==='monthly'){cur.setMonth(cur.getMonth()+1);}
         else{cur.setDate(cur.getDate()+days[repeat]);}
         if(cur>end) break;
-        inserts.push({...row,date:cur.toISOString().slice(0,10),series_id:seriesId});
+        inserts.push({...row,date:localDate(cur),series_id:seriesId});
       }
       if(inserts.length) await sb.from('events').insert(inserts);
       toast('🔁 '+inserts.length+' répétition(s) ajoutée(s) !');
