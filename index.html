@@ -96,9 +96,10 @@ body.dark .topbar,body.dark .quickbar{background:#1e1b30;}
 .cal-nav-btn{width:32px;height:32px;border-radius:10px;border:2px solid rgba(45,43,85,.15);background:none;cursor:pointer;font-size:16px;font-weight:700;color:var(--dark);}
 .cal-today-btn{padding:5px 12px;border-radius:10px;border:2px solid rgba(45,43,85,.15);background:none;font-family:'Nunito',sans-serif;font-size:12px;font-weight:700;cursor:pointer;color:var(--dark);}
 .cal-grid{background:var(--white);border-radius:var(--r);box-shadow:var(--sh);overflow:hidden;}
-.cal-weekdays{display:grid;grid-template-columns:repeat(7,1fr);background:rgba(45,43,85,.04);}
-.cal-wd{text-align:center;padding:10px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:rgba(45,43,85,.4);}
-.cal-days{display:grid;grid-template-columns:repeat(7,1fr);}
+.cal-unified{display:grid;grid-template-columns:repeat(7,1fr);}
+.cal-weekdays{display:contents;}
+.cal-wd{text-align:center;padding:10px;font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:rgba(45,43,85,.4);background:rgba(45,43,85,.04);}
+.cal-days{display:contents;}
 .cal-day{border:1px solid rgba(45,43,85,.05);padding:6px;min-height:70px;cursor:pointer;transition:background .15s;}
 .cal-day:hover{background:rgba(45,43,85,.03);}
 .cal-day.other-month .day-num{color:rgba(45,43,85,.2);}
@@ -404,11 +405,13 @@ body.dark .topbar,body.dark .quickbar{background:#1e1b30;}
             <button class="cal-nav-btn" onclick="nextMonth()">›</button>
           </div>
         </div>
+        <div class="cal-unified">
         <div class="cal-weekdays">
           <div class="cal-wd">L</div><div class="cal-wd">M</div><div class="cal-wd">M</div>
           <div class="cal-wd">J</div><div class="cal-wd">V</div><div class="cal-wd">S</div><div class="cal-wd">D</div>
         </div>
         <div class="cal-days" id="calDays"></div>
+        </div>
       </div>
     </div>
 
