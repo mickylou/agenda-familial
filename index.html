@@ -1012,6 +1012,44 @@ async function dbLoad(){
   if(c.data) S.chats    =c.data.map(r=>({id:r.id,memberId:r.member_id,text:r.text,ts:r.ts}));
   if(s.data) S.shopItems=s.data.map(r=>({id:r.id,name:r.name,emoji:r.emoji,category:r.category,done:r.done,memberId:r.member_id}));
   renderAll();
+  // Injecter automatiquement le calendrier football si pas encore présent
+  seedFootballEvents();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CALENDRIER FOOTBALL — auto-injection Supabase
+// ═══════════════════════════════════════════════════════════════
+async function seedFootballEvents(){
+  // Matchs restants RCSC Charleroi Dames (IP seniors Dames ACFF - Interprovinciale D2)
+  // et Standard de Liège U23 (D1 ACFF PO2 — playoffs de relégation)
+  const FOOT_EVENTS = [
+    // ── RCSC CHARLEROI DAMES (IP seniors Dames ACFF) ──
+    {title:'⚽ RCSC Charleroi Dames – Union St-Gilloise',date:'2026-03-15',time:'15:00',cat:'sport',location:'Bosstraat, Frankveld 12, 1620 Drogenbos',note:'IP Dames ACFF – Déplacement\n🔴 Aller (18/10) : Charleroi 3–1 Union'},
+    {title:'⚽ RCSC Charleroi Dames – RFC de Liège',date:'2026-03-28',time:'17:00',cat:'sport',location:'Complexe De Marcinelle, Rue Bois Plante 228, 6001 Marcinelle',note:'IP Dames ACFF – Domicile\n🔴 Aller (15/11) : RFC Liège 1–1 Charleroi'},
+    {title:'⚽ RCSC Charleroi Dames – BX Brussels',date:'2026-04-05',time:'17:00',cat:'sport',location:'Complexe De Marcinelle, Rue Bois Plante 228, 6001 Marcinelle',note:'IP Dames ACFF – Domicile'},
+    {title:'⚽ RCSC Charleroi Dames – US Beauraing',date:'2026-04-12',time:'15:00',cat:'sport',location:'Complexe De Marcinelle, Rue Bois Plante 228, 6001 Marcinelle',note:'IP Dames ACFF – Domicile\n🔴 Aller (22/11) : Charleroi 5–1 Beauraing'},
+    {title:'⚽ RCSC Charleroi Dames – Stade Mouscronnois Girls',date:'2026-04-19',time:'17:00',cat:'sport',location:'Complexe De Marcinelle, Rue Bois Plante 228, 6001 Marcinelle',note:'IP Dames ACFF – Domicile\n🔴 Aller (14/09) : Mouscron 6–2 Charleroi\n🔴 Retour aller (13/12) : Mouscron 0–2 Charleroi'},
+    // ── STANDARD DE LIÈGE U23 (D1 ACFF PO2) ──
+    {title:'⚽ Standard U23 – Union Namur',date:'2026-03-15',time:'15:00',cat:'sport',location:'Terr. Jambes ADEPS, Allée du Stade, 5100 Jambes',note:'D1 ACFF PO2 – Déplacement'},
+    {title:'⚽ Standard U23 – Sporting Charleroi',date:'2026-03-22',time:'15:00',cat:'sport',location:'SL16 Football Campus, Allée du Bol d\'Air 11, 4031 Angleur',note:'D1 ACFF PO2 – Domicile\n🔴 Aller (01/11) : Standard 0–1 Charleroi\n🔴 Retour (08/02) : Standard 2–0 Charleroi'},
+    {title:'⚽ Standard U23 – R. Union St-Gilloise',date:'2026-03-29',time:'15:00',cat:'sport',location:'SL16 Football Campus, Allée du Bol d\'Air 11, 4031 Angleur',note:'D1 ACFF PO2 – Domicile\n🔴 Aller (28/09) : Standard 4–2 Union\n🔴 Retour (22/11) : Union 2–1 Standard'},
+    {title:'⚽ Standard U23 – Crossing Schaerbeek',date:'2026-04-05',time:'15:00',cat:'sport',location:'Déplacement – terrain Crossing',note:'D1 ACFF PO2 – Déplacement'},
+    {title:'⚽ Standard U23 – R. Excelsior Virton',date:'2026-04-12',time:'15:00',cat:'sport',location:'SL16 Football Campus, Allée du Bol d\'Air 11, 4031 Angleur',note:'D1 ACFF PO2 – Domicile'},
+    {title:'⚽ Standard U23 – RSC Habay-la-Neuve',date:'2026-04-19',time:'15:00',cat:'sport',location:'SL16 Football Campus, Allée du Bol d\'Air 11, 4031 Angleur',note:'D1 ACFF PO2 – Domicile'},
+    {title:'⚽ Standard U23 – RFC Meux',date:'2026-04-26',time:'15:00',cat:'sport',location:'Déplacement – terrain Meux',note:'D1 ACFF PO2 – Déplacement'},
+  ];
+  // Vérifier si les events existent déjà (par titre) pour éviter les doublons
+  const existingTitles = new Set((S.events||[]).map(e=>e.title));
+  const toInsert = FOOT_EVENTS.filter(e => !existingTitles.has(e.title));
+  if(!toInsert.length) return;
+  for(const ev of toInsert){
+    const row={title:ev.title,date:ev.date,date_end:null,time:ev.time||null,time_end:null,cat:ev.cat,member_ids:[],location:ev.location||null,note:ev.note||null};
+    const {data,error}=await sb.from('events').insert(row).select().single();
+    if(!error && data){
+      S.events.push({id:data.id,title:data.title,date:data.date,dateEnd:null,time:data.time,timeEnd:null,cat:data.cat,memberIds:[],location:data.location,note:data.note});
+    }
+  }
+  if(toInsert.length) renderAll();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1511,6 +1549,49 @@ async function init(){
   setupRealtime();fetchWeather();
   checkBirthdays();checkSecrets();
   setInterval(renderFunMsg,1800000);
+  showProfilePicker();
+}
+
+function showProfilePicker(){
+  const existing=document.getElementById('profilePickerOverlay');
+  if(existing) existing.remove();
+  const members=S.members.length ? S.members : [];
+  const cards=members.map(m=>`
+    <div onclick="pickProfile(${m.id})" style="display:flex;flex-direction:column;align-items:center;gap:12px;cursor:pointer;transition:transform .2s;" onmouseover="this.style.transform='scale(1.08)'" onmouseout="this.style.transform='scale(1)'">
+      <div style="width:100px;height:100px;border-radius:50%;background:${m.color};display:flex;align-items:center;justify-content:center;font-size:40px;font-weight:800;color:#fff;font-family:'Baloo 2',sans-serif;overflow:hidden;border:4px solid transparent;transition:border-color .2s;">
+        ${m.photo?`<img src="${m.photo}" style="width:100%;height:100%;object-fit:cover;">`:(m.name[0]||'?')}
+      </div>
+      <div style="font-family:'Baloo 2',sans-serif;font-size:17px;font-weight:700;color:#fff;">${m.name}</div>
+      <div style="font-size:12px;color:rgba(255,255,255,.6);">${m.role||''}</div>
+    </div>
+  `).join('');
+  const overlay=document.createElement('div');
+  overlay.id='profilePickerOverlay';
+  overlay.style.cssText='position:fixed;inset:0;z-index:9999;background:linear-gradient(135deg,#1a1a2e 0%,#2d2b55 50%,#1a1a2e 100%);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:48px;';
+  overlay.innerHTML=`
+    <div style="text-align:center;">
+      <div style="font-family:'Baloo 2',sans-serif;font-size:32px;font-weight:900;color:#fff;margin-bottom:8px;">👋 Qui es-tu ?</div>
+      <div style="font-size:15px;color:rgba(255,255,255,.5);">Choisis ton profil pour commencer</div>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:40px;justify-content:center;padding:0 24px;">
+      ${cards}
+    </div>
+  `;
+  document.body.appendChild(overlay);
+}
+
+function pickProfile(id){
+  _me=id;
+  localStorage.setItem('fs_me',id);
+  const overlay=document.getElementById('profilePickerOverlay');
+  if(overlay){
+    overlay.style.transition='opacity .4s';
+    overlay.style.opacity='0';
+    setTimeout(()=>overlay.remove(),400);
+  }
+  const m=S.members.find(m=>m.id===id);
+  renderSidebar();renderChat();
+  toast('👋 Bonjour '+( m?.name||'')+'  !');
 }
 init();
 
