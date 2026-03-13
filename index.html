@@ -581,6 +581,19 @@ body.dark .topbar,body.dark .quickbar{background:#1e1b30;}
         <label class="form-label">Note</label>
         <input class="form-input" id="evtNote" placeholder="Remarques…">
       </div>
+      <div class="form-group">
+        <label class="form-label">Répétition 🔁</label>
+        <select class="form-input" id="evtRepeat" onchange="document.getElementById('evtRepeatEndGroup').style.display=this.value?'block':'none'">
+          <option value="">Aucune</option>
+          <option value="weekly">Chaque semaine</option>
+          <option value="biweekly">Toutes les 2 semaines</option>
+          <option value="monthly">Chaque mois</option>
+        </select>
+      </div>
+      <div class="form-group" id="evtRepeatEndGroup" style="display:none;">
+        <label class="form-label">Répéter jusqu'au</label>
+        <input class="form-input" id="evtRepeatEnd" type="date">
+      </div>
     </div>
     <div class="modal-foot">
       <button class="tbtn tbtn-ghost" id="evtDeleteBtn" style="display:none;color:var(--coral);border-color:var(--coral);" onclick="deleteEvent()">🗑️ Supprimer</button>
@@ -1020,7 +1033,8 @@ async function dbLoad(){
 // CALENDRIER FOOTBALL — auto-injection Supabase
 // ═══════════════════════════════════════════════════════════════
 async function seedFootballEvents(){
-  // Matchs restants RCSC Charleroi Dames (IP Dames ACFF) et Standard U23 (D1 ACFF PO2) — saison 2025-2026
+  // Ne s'exécute qu'une seule fois — si déjà fait, on skip
+  if(localStorage.getItem('fs_foot_seeded_v2')==='1') return;
   const FOOT_EVENTS = [
     // ── RCSC CHARLEROI DAMES — IP seniors Dames ACFF 2025-2026 ──
     {title:'⚽ Dames – Union St-Gilloise / Charleroi',date:'2026-03-15',time:'15:00',cat:'sport',location:'Bosstraat, Frankveld 12, 1620 Drogenbos',note:'IP Dames ACFF J15 – Déplacement'},
@@ -1038,18 +1052,16 @@ async function seedFootballEvents(){
     {title:'⚽ Standard U23 – Sporting Charleroi / Standard',date:'2026-05-03',time:'15:00',cat:'sport',location:'Stade De La Neuville, Rue Neuve 75A, 6061 Montignies-s/Sambre',note:'D1 ACFF PO2 – Déplacement'},
     {title:'⚽ Standard U23 – Standard / Crossing Schaerbeek',date:'2026-05-10',time:'15:00',cat:'sport',location:'SL16 Football Campus, Allée du Bol D\'Air 11, 4031 Angleur',note:'D1 ACFF PO2 – Domicile'},
   ];
-  // Vérifier si les events existent déjà (par titre) pour éviter les doublons
+  // Insérer uniquement les events pas encore en base
   const existingTitles = new Set((S.events||[]).map(e=>e.title));
   const toInsert = FOOT_EVENTS.filter(e => !existingTitles.has(e.title));
-  if(!toInsert.length) return;
   for(const ev of toInsert){
     const row={title:ev.title,date:ev.date,date_end:null,time:ev.time||null,time_end:null,cat:ev.cat,member_ids:[],location:ev.location||null,note:ev.note||null};
-    const {data,error}=await sb.from('events').insert(row).select().single();
-    if(!error && data){
-      S.events.push({id:data.id,title:data.title,date:data.date,dateEnd:null,time:data.time,timeEnd:null,cat:data.cat,memberIds:[],location:data.location,note:data.note});
-    }
+    await sb.from('events').insert(row);
   }
-  if(toInsert.length) renderAll();
+  // Marquer comme fait — ne se réexécutera plus jamais
+  localStorage.setItem('fs_foot_seeded_v2','1');
+  if(toInsert.length) await dbLoad();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1346,6 +1358,9 @@ function openAddEvent(dt=''){
   S.editEventId=null;S.cat='sport';S.memberIds=[];setDayMode('single');
   ['evtTitle','evtDate','evtTime','evtTimeEnd','evtLocation','evtNote','evtDateFrom','evtDateTo'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
   if(dt){const el=document.getElementById('evtDate');if(el)el.value=dt;}
+  document.getElementById('evtRepeat').value='';
+  document.getElementById('evtRepeatEnd').value='';
+  document.getElementById('evtRepeatEndGroup').style.display='none';
   document.getElementById('evtModalTitle').textContent='✨ Nouvel événement';
   document.getElementById('evtSaveBtn').textContent='💾 Enregistrer';
   document.getElementById('evtDeleteBtn').style.display='none';
@@ -1359,6 +1374,9 @@ function openEditEvent(id){
   document.getElementById('evtTitle').value=e.title||'';
   document.getElementById('evtLocation').value=e.location||'';
   document.getElementById('evtNote').value=e.note||'';
+  document.getElementById('evtRepeat').value='';
+  document.getElementById('evtRepeatEnd').value='';
+  document.getElementById('evtRepeatEndGroup').style.display='none';
   document.getElementById('evtModalTitle').textContent="✏️ Modifier l'événement";
   document.getElementById('evtSaveBtn').textContent='💾 Modifier';
   document.getElementById('evtDeleteBtn').style.display='flex';
@@ -1371,11 +1389,30 @@ async function saveEvent(){
   if(S.dayMode==='multi'){date=document.getElementById('evtDateFrom').value;dateEnd=document.getElementById('evtDateTo').value;if(!date||!dateEnd){toast('⚠️ Dates obligatoires !');return;}}
   else{date=document.getElementById('evtDate').value;if(!date){toast('⚠️ Date obligatoire !');return;}}
   const row={title,date,date_end:dateEnd,time:document.getElementById('evtTime').value||null,time_end:document.getElementById('evtTimeEnd').value||null,cat:S.cat,member_ids:S.memberIds,location:document.getElementById('evtLocation').value||null,note:document.getElementById('evtNote').value||null};
+  const repeat=document.getElementById('evtRepeat').value;
+  const repeatEnd=document.getElementById('evtRepeatEnd').value;
   let err;
   if(S.editEventId){({error:err}=await sb.from('events').update(row).eq('id',S.editEventId));}
-  else{({error:err}=await sb.from('events').insert(row));}
+  else{
+    ({error:err}=await sb.from('events').insert(row));
+    // Générer les occurrences si répétition
+    if(!err && repeat && repeatEnd && date < repeatEnd){
+      const days={weekly:7,biweekly:14,monthly:null};
+      let cur=new Date(date+'T00:00:00');
+      const end=new Date(repeatEnd+'T00:00:00');
+      const inserts=[];
+      while(true){
+        if(repeat==='monthly'){cur.setMonth(cur.getMonth()+1);}
+        else{cur.setDate(cur.getDate()+days[repeat]);}
+        if(cur>end) break;
+        inserts.push({...row,date:cur.toISOString().slice(0,10)});
+      }
+      if(inserts.length) await sb.from('events').insert(inserts);
+      toast('🔁 '+inserts.length+' répétition(s) ajoutée(s) !');
+    }
+  }
   if(err){toast('⚠️ Erreur sauvegarde');console.error(err);return;}
-  closeModal('eventModal');toast(S.editEventId?'✅ Modifié !':'🎉 Ajouté !');confetti(25);
+  closeModal('eventModal');if(!repeat||!repeatEnd)toast(S.editEventId?'✅ Modifié !':'🎉 Ajouté !');confetti(25);
   S.editEventId=null;S.memberIds=[];await dbLoad();
 }
 async function deleteEvent(){
@@ -1514,9 +1551,97 @@ let _secretForId=null,_secretFromId=null;
 function openSecret(){_secretForId=null;_secretFromId=getMe()?.id||null;document.getElementById('secretText').value='';renderSecretPickers();openModal('secretModal');if(document.getElementById('mobileSidebar')?.classList.contains('open'))toggleSidebar();}
 function renderSecretPickers(){renderSecretPicker('secretForPicker','for');renderSecretPicker('secretFromPicker','from');}
 function renderSecretPicker(elId,role){const el=document.getElementById(elId);if(!el)return;const selected=role==='for'?_secretForId:_secretFromId;el.innerHTML=S.members.map(m=>{const sel=m.id===selected;return`<button class="mpick-btn ${sel?'selected':''}" onclick="${role==='for'?'_secretForId':'_secretFromId'}=${m.id};renderSecretPickers();" style="${sel?'border-color:'+m.color+';color:'+m.color+';background:'+m.color+'15;':''}">${m.name}</button>`;}).join('');}
-async function saveSecret(){if(!_secretForId){toast('⚠️ Choisis le destinataire !');return;}const txt=document.getElementById('secretText').value.trim();if(!txt){toast('⚠️ Écris un message !');return;}const from=S.members.find(m=>m.id===_secretFromId);const key='fs_secret_'+_secretForId;const secrets=JSON.parse(localStorage.getItem(key)||'[]');secrets.push({text:txt,from:from?.name||'Quelqu\'un',ts:Date.now()});localStorage.setItem(key,JSON.stringify(secrets));closeModal('secretModal');toast('💌 Message secret envoyé !');confetti(20);}
-function checkSecrets(){const me=getMe();if(!me)return;const key='fs_secret_'+me.id;const secrets=JSON.parse(localStorage.getItem(key)||'[]');if(!secrets.length)return;const shown=JSON.parse(localStorage.getItem('fs_secrets_shown')||'[]');const unread=secrets.filter(s=>!shown.includes(s.ts));if(!unread.length)return;const s=unread[0];shown.push(s.ts);localStorage.setItem('fs_secrets_shown',JSON.stringify(shown));setTimeout(()=>showSecret(s),1500);}
-function showSecret(secret){const overlay=document.createElement('div');overlay.className='secret-overlay';overlay.id='secretOverlay';overlay.innerHTML=`<div class="secret-card"><div class="secret-envelope">💌</div><div style="font-size:13px;color:rgba(255,255,255,.5);margin:8px 0 4px;">Un message rien que pour toi… ✨</div><div class="secret-msg">"${secret.text}"</div><div class="secret-from">— avec amour, ${secret.from} 💕</div><button onclick="document.getElementById('secretOverlay').remove();confetti(30);" style="padding:12px 28px;border-radius:20px;border:none;background:white;color:#764ba2;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;">🥰 Merci !</button></div>`;document.body.appendChild(overlay);}
+
+async function saveSecret(){
+  if(!_secretForId){toast('⚠️ Choisis le destinataire !');return;}
+  const txt=document.getElementById('secretText').value.trim();
+  if(!txt){toast('⚠️ Écris un message !');return;}
+  const from=S.members.find(m=>m.id===_secretFromId);
+  // Sauvegarder dans Supabase table "secrets"
+  const {error}=await sb.from('secrets').insert({
+    for_member_id:_secretForId,
+    from_name:from?.name||'Quelqu\'un',
+    text:txt,
+    read:false
+  });
+  if(error){
+    // Fallback localStorage si table pas encore créée
+    const key='fs_secret_'+_secretForId;
+    const secrets=JSON.parse(localStorage.getItem(key)||'[]');
+    secrets.push({text:txt,from:from?.name||'Quelqu\'un',ts:Date.now()});
+    localStorage.setItem(key,JSON.stringify(secrets));
+  }
+  closeModal('secretModal');
+  toast('💌 Message secret envoyé !');
+  confetti(20);
+}
+
+async function checkSecrets(memberId){
+  const me=memberId ? S.members.find(m=>m.id===memberId) : getMe();
+  if(!me) return;
+  let secretsList=[];
+  // Essayer Supabase d'abord
+  try {
+    const {data,error}=await sb.from('secrets').select('*').eq('for_member_id',me.id).eq('read',false);
+    if(!error && data && data.length){
+      secretsList=data.map(s=>({id:s.id,text:s.text,from:s.from_name}));
+      // Marquer comme lu
+      const ids=data.map(s=>s.id);
+      await sb.from('secrets').update({read:true}).in('id',ids);
+    }
+  } catch(e){}
+  // Fallback localStorage si Supabase vide
+  if(!secretsList.length){
+    const key='fs_secret_'+me.id;
+    const stored=JSON.parse(localStorage.getItem(key)||'[]');
+    const shown=JSON.parse(localStorage.getItem('fs_secrets_shown')||'[]');
+    const unread=stored.filter(s=>!shown.includes(s.ts));
+    if(unread.length){
+      secretsList=unread.map(s=>({text:s.text,from:s.from,ts:s.ts}));
+      const newShown=[...shown,...unread.map(s=>s.ts)];
+      localStorage.setItem('fs_secrets_shown',JSON.stringify(newShown));
+    }
+  }
+  if(!secretsList.length) return;
+  // Afficher les secrets en séquence après l'animation du profil
+  setTimeout(()=>showSecretsSequence(secretsList),700);
+}
+
+function showSecretsSequence(list){
+  let idx=0;
+  function showNext(){
+    const existing=document.getElementById('secretOverlay');
+    if(existing) existing.remove();
+    if(idx>=list.length){ confetti(30); return; }
+    const s=list[idx];
+    const isLast=idx===list.length-1;
+    const counter=list.length>1?`<div style="font-size:11px;color:rgba(255,255,255,.4);margin-bottom:8px;">${idx+1} / ${list.length}</div>`:'';
+    const overlay=document.createElement('div');
+    overlay.className='secret-overlay';
+    overlay.id='secretOverlay';
+    overlay.innerHTML=`
+      <div class="secret-card" style="max-width:400px;">
+        <div class="secret-envelope">💌</div>
+        ${counter}
+        <div style="font-size:13px;color:rgba(255,255,255,.5);margin:8px 0 4px;">Un message rien que pour toi… ✨</div>
+        <div class="secret-msg">"${s.text}"</div>
+        <div class="secret-from">— avec amour, ${s.from} 💕</div>
+        <button onclick="(function(){idx++;showNext();})()" id="secretNextBtn" style="padding:12px 28px;border-radius:20px;border:none;background:white;color:#764ba2;font-family:'Nunito',sans-serif;font-size:15px;font-weight:800;cursor:pointer;margin-top:4px;">
+          ${isLast?'🥰 Merci !':'💌 Message suivant'}
+        </button>
+      </div>`;
+    document.body.appendChild(overlay);
+    // Bouton via closure propre
+    overlay.querySelector('#secretNextBtn').onclick=()=>{
+      overlay.style.transition='opacity .3s,transform .3s';
+      overlay.style.opacity='0';
+      overlay.style.transform='scale(.9)';
+      setTimeout(()=>{idx++;showNext();},300);
+    };
+    idx; // référence pour closure — idx géré par outer scope
+  }
+  showNext();
+}
 
 // ═══════════════════════════════════════════════════════════════
 // DARK MODE
@@ -1591,7 +1716,9 @@ function pickProfile(id){
   }
   const m=S.members.find(m=>m.id===id);
   renderSidebar();renderChat();
-  toast('👋 Bonjour '+( m?.name||'')+'  !');
+  toast('👋 Bonjour '+(m?.name||'')+'  !');
+  // Vérifier les mots doux pour ce membre
+  checkSecrets(id);
 }
 init();
 
