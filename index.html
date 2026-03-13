@@ -1020,23 +1020,23 @@ async function dbLoad(){
 // CALENDRIER FOOTBALL — auto-injection Supabase
 // ═══════════════════════════════════════════════════════════════
 async function seedFootballEvents(){
-  // Matchs restants RCSC Charleroi Dames (IP seniors Dames ACFF - Interprovinciale D2)
-  // et Standard de Liège U23 (D1 ACFF PO2 — playoffs de relégation)
+  // Matchs restants RCSC Charleroi Dames (IP Dames ACFF) et Standard U23 (D1 ACFF PO2) — saison 2025-2026
   const FOOT_EVENTS = [
-    // ── RCSC CHARLEROI DAMES (IP seniors Dames ACFF) ──
-    {title:'⚽ RCSC Charleroi Dames – Union St-Gilloise',date:'2026-03-15',time:'15:00',cat:'sport',location:'Bosstraat, Frankveld 12, 1620 Drogenbos',note:'IP Dames ACFF – Déplacement\n🔴 Aller (18/10) : Charleroi 3–1 Union'},
-    {title:'⚽ RCSC Charleroi Dames – RFC de Liège',date:'2026-03-28',time:'17:00',cat:'sport',location:'Complexe De Marcinelle, Rue Bois Plante 228, 6001 Marcinelle',note:'IP Dames ACFF – Domicile\n🔴 Aller (15/11) : RFC Liège 1–1 Charleroi'},
-    {title:'⚽ RCSC Charleroi Dames – BX Brussels',date:'2026-04-05',time:'17:00',cat:'sport',location:'Complexe De Marcinelle, Rue Bois Plante 228, 6001 Marcinelle',note:'IP Dames ACFF – Domicile'},
-    {title:'⚽ RCSC Charleroi Dames – US Beauraing',date:'2026-04-12',time:'15:00',cat:'sport',location:'Complexe De Marcinelle, Rue Bois Plante 228, 6001 Marcinelle',note:'IP Dames ACFF – Domicile\n🔴 Aller (22/11) : Charleroi 5–1 Beauraing'},
-    {title:'⚽ RCSC Charleroi Dames – Stade Mouscronnois Girls',date:'2026-04-19',time:'17:00',cat:'sport',location:'Complexe De Marcinelle, Rue Bois Plante 228, 6001 Marcinelle',note:'IP Dames ACFF – Domicile\n🔴 Aller (14/09) : Mouscron 6–2 Charleroi\n🔴 Retour aller (13/12) : Mouscron 0–2 Charleroi'},
-    // ── STANDARD DE LIÈGE U23 (D1 ACFF PO2) ──
-    {title:'⚽ Standard U23 – Union Namur',date:'2026-03-15',time:'15:00',cat:'sport',location:'Terr. Jambes ADEPS, Allée du Stade, 5100 Jambes',note:'D1 ACFF PO2 – Déplacement'},
-    {title:'⚽ Standard U23 – Sporting Charleroi',date:'2026-03-22',time:'15:00',cat:'sport',location:'SL16 Football Campus, Allée du Bol d\'Air 11, 4031 Angleur',note:'D1 ACFF PO2 – Domicile\n🔴 Aller (01/11) : Standard 0–1 Charleroi\n🔴 Retour (08/02) : Standard 2–0 Charleroi'},
-    {title:'⚽ Standard U23 – R. Union St-Gilloise',date:'2026-03-29',time:'15:00',cat:'sport',location:'SL16 Football Campus, Allée du Bol d\'Air 11, 4031 Angleur',note:'D1 ACFF PO2 – Domicile\n🔴 Aller (28/09) : Standard 4–2 Union\n🔴 Retour (22/11) : Union 2–1 Standard'},
-    {title:'⚽ Standard U23 – Crossing Schaerbeek',date:'2026-04-05',time:'15:00',cat:'sport',location:'Déplacement – terrain Crossing',note:'D1 ACFF PO2 – Déplacement'},
-    {title:'⚽ Standard U23 – R. Excelsior Virton',date:'2026-04-12',time:'15:00',cat:'sport',location:'SL16 Football Campus, Allée du Bol d\'Air 11, 4031 Angleur',note:'D1 ACFF PO2 – Domicile'},
-    {title:'⚽ Standard U23 – RSC Habay-la-Neuve',date:'2026-04-19',time:'15:00',cat:'sport',location:'SL16 Football Campus, Allée du Bol d\'Air 11, 4031 Angleur',note:'D1 ACFF PO2 – Domicile'},
-    {title:'⚽ Standard U23 – RFC Meux',date:'2026-04-26',time:'15:00',cat:'sport',location:'Déplacement – terrain Meux',note:'D1 ACFF PO2 – Déplacement'},
+    // ── RCSC CHARLEROI DAMES — IP seniors Dames ACFF 2025-2026 ──
+    {title:'⚽ Dames – Union St-Gilloise / Charleroi',date:'2026-03-15',time:'15:00',cat:'sport',location:'Bosstraat, Frankveld 12, 1620 Drogenbos',note:'IP Dames ACFF J15 – Déplacement'},
+    {title:'⚽ Dames – Charleroi / FC Femina White Star',date:'2026-03-21',time:'17:00',cat:'sport',location:'Complexe De Marcinelle, Rue Bois Plante 228, 6001 Marcinelle',note:'IP Dames ACFF J16 – Domicile'},
+    {title:'⚽ Dames – Charleroi / RFC de Liège',date:'2026-03-28',time:'17:00',cat:'sport',location:'Complexe De Marcinelle, Rue Bois Plante 228, 6001 Marcinelle',note:'IP Dames ACFF J17 – Domicile'},
+    {title:'⚽ Dames – US Beauraing / Charleroi',date:'2026-04-11',time:'17:30',cat:'sport',location:'Terr. Beauraing Flocquaux, rue de Houyet, 5570 Beauraing',note:'IP Dames ACFF J18 – Déplacement'},
+    {title:'⚽ Dames – Charleroi / BX Brussels',date:'2026-04-18',time:'17:30',cat:'sport',location:'Complexe De Marcinelle, Rue Bois Plante 228, 6001 Marcinelle',note:'IP Dames ACFF J19 – Domicile'},
+    // ── STANDARD DE LIÈGE U23 — D1 ACFF PO2 2025-2026 ──
+    {title:'⚽ Standard U23 – Union Namur / Standard',date:'2026-03-15',time:'15:00',cat:'sport',location:'Terr. Jambes ADEPS, Allée du Stade, 5100 Jambes',note:'D1 ACFF PO2 – Déplacement'},
+    {title:'⚽ Standard U23 – Standard / Sporting Charleroi',date:'2026-03-22',time:'15:00',cat:'sport',location:'SL16 Football Campus, Allée du Bol D\'Air 11, 4031 Angleur',note:'D1 ACFF PO2 – Domicile'},
+    {title:'⚽ Standard U23 – Crossing Schaerbeek / Standard',date:'2026-03-29',time:'15:00',cat:'sport',location:'St. Communal Schaerbeek, Av. du Suffrage Universel, 1030 Schaerbeek',note:'D1 ACFF PO2 – Déplacement'},
+    {title:'⚽ Standard U23 – Standard / Union Namur',date:'2026-04-12',time:'15:00',cat:'sport',location:'SL16 Football Campus, Allée du Bol D\'Air 11, 4031 Angleur',note:'D1 ACFF PO2 – Domicile'},
+    {title:'⚽ Standard U23 – Standard / Royal Stockay',date:'2026-04-19',time:'15:00',cat:'sport',location:'SL16 Football Campus, Allée du Bol D\'Air 11, 4031 Angleur',note:'D1 ACFF PO2 – Domicile'},
+    {title:'⚽ Standard U23 – Union St-Gilloise / Standard',date:'2026-04-25',time:'19:30',cat:'sport',location:'Sp. Neerstalle, Rue Zwartebeek 23, 1180 Uccle',note:'D1 ACFF PO2 – Déplacement'},
+    {title:'⚽ Standard U23 – Sporting Charleroi / Standard',date:'2026-05-03',time:'15:00',cat:'sport',location:'Stade De La Neuville, Rue Neuve 75A, 6061 Montignies-s/Sambre',note:'D1 ACFF PO2 – Déplacement'},
+    {title:'⚽ Standard U23 – Standard / Crossing Schaerbeek',date:'2026-05-10',time:'15:00',cat:'sport',location:'SL16 Football Campus, Allée du Bol D\'Air 11, 4031 Angleur',note:'D1 ACFF PO2 – Domicile'},
   ];
   // Vérifier si les events existent déjà (par titre) pour éviter les doublons
   const existingTitles = new Set((S.events||[]).map(e=>e.title));
